@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>survival-analysis on James Totterdell</title>
+    <link>https://jatotterdell.github.io/categories/survival-analysis/</link>
+    <description>Recent content in survival-analysis on James Totterdell</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Thu, 11 Apr 2019 00:00:00 +0000</lastBuildDate><atom:link href="https://jatotterdell.github.io/categories/survival-analysis/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Semiparametric baseline hazard using monotone splines</title>
+      <link>https://jatotterdell.github.io/post/2019/04/11/semiparametric-baseline-hazard-using-monotone-splines/</link>
+      <pubDate>Thu, 11 Apr 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/post/2019/04/11/semiparametric-baseline-hazard-using-monotone-splines/</guid>
+      <description>Background I had been following a conversation on the Stan discourse about implementing flexible survival models in Stan. A common thread of the discussions was the use of monotone splines (M-splines) and their corresponding integrated splines (I-splines) as a semi-parametric model for the baseline cumulative hazard (or baseline log-cumulative hazard).
+I have previously encountered the paper by (Ramsay and others 1988) whilst reading about spline extensions to the self-controlled case series (SCCS) method, but did not have much time to get into the details.</description>
+    </item>
+    
+    <item>
+      <title>Variational Inference for Exponential Proportional Hazards Model</title>
+      <link>https://jatotterdell.github.io/post/2019/03/28/variational-inference-for-exponential-proportional-hazards-model/</link>
+      <pubDate>Thu, 28 Mar 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/post/2019/03/28/variational-inference-for-exponential-proportional-hazards-model/</guid>
+      <description>Variational Approximations Variational Bayes is an approximate Bayesian inference method based on choosing an approximating density from some restricted class of densities by minimising the Kullback-Leibler divergence \[ \text{KL}(p\vert\vert q) = \int_\Omega \log\frac{p(\theta)}{q(\theta)} p(\theta)d\theta. \] In Bayesian inference, the density to be approximated is usually the posterior probability of some model parameter of interest \[ p(\theta|y) = \frac{p(\theta,y)}{p(y )}, \] and so the approximating density \(q\) is chosen as \[ q^\star(\theta) = \underset{q\in\mathcal{Q}}{\text{argmin }} \text{KL}(q\lvert\rvert p).</description>
+    </item>
+    
+  </channel>
+</rss>

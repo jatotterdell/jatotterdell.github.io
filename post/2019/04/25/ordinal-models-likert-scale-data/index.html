@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  
+
+  <link rel="icon" type="image/png" href="https://jatotterdell.github.io/favicon.png">
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/github-gist.css" rel="stylesheet" id="theme-stylesheet">
+  <script src="https://jatotterdell.github.io/js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+  <title>
+    
+    
+     Ordinal Models Likert Scale Data 
+    
+  </title>
+  <link rel="canonical" href="https://jatotterdell.github.io/post/2019/04/25/ordinal-models-likert-scale-data/">
+
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/fonts.css" />
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/style.css" />
+
+  
+</head>
+
+<body>
+<section id=nav>
+  <h1><a href="https://jatotterdell.github.io/">James Totterdell</a></h1>
+  <ul>
+    
+    <li><a href="https://jatotterdell.github.io/">Home</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/about/">About</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/categories/">Categories</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/tags/">Tags</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/quotes/">Quotes</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/index.xml">RSS</a></li>
+    
+  </ul>
+</section>
+
+
+<section id=content>
+  <h1> Ordinal Models Likert Scale Data </h1>
+
+  <div id=sub-header>
+    James Totterdell · 2019-04-25
+  </div>
+
+  <div class="entry-content">
+    
+
+
+<div id="background" class="section level1">
+<h1>Background</h1>
+<p>I was recently tasked with providing support to a study where the primary outcome was an eight-item, seven-point Likert scale. The proposal was to use a t-test to undertake the analysis. Being unfamiliar with the analysis of Likert scale responses I decided to do a bit of research into what was standard practice.</p>
+<p>There appears to be disagreement about whether the appropriate analysis should be based on parametric or non-parametric methods <span class="citation">(Sullivan and Artino Jr <a href="#ref-sullivan2013" role="doc-biblioref">2013</a>)</span>. Technically, Likert scale data are ordinal, and any values assigned to the levels beyond the natural ordering are arbitrary. However, there still appears to be various recommendations on the appropriateness of parametric methods which ignore this ordinal nature and impose interval values to each Likert items possible responses <span class="citation">(Carifio and Perla <a href="#ref-carifio2008" role="doc-biblioref">2008</a>; Norman <a href="#ref-norman2010" role="doc-biblioref">2010</a>; Harpe <a href="#ref-harpe2015" role="doc-biblioref">2015</a>)</span>.</p>
+<p>Despite these recommendations, I feel somewhat unsatisfied using models which fail to represent a reasonable data generating process. Some arguments to this end are made in <span class="citation">Liddell and Kruschke (<a href="#ref-liddell2018" role="doc-biblioref">2018</a>)</span>, where the suggestion is, unsurprisingly, to use ordinal models to analyse ordinal data. The authors present a number of scenarios where assuming an ordinal model can better capture certain potential patterns of Likert scale data.</p>
+<p>Further details on estimating Bayesian ordinal models in R using <code>brms</code> are given by the package author in <span class="citation">Bürkner and Vuorre (<a href="#ref-burkner2018" role="doc-biblioref">2018</a>)</span>.</p>
+<p>I wanted to work through the application of ordinal models to Likert scale data, including simulation, sample size calculation, and where the benefits and, if any, disadvantages may come into play.</p>
+</div>
+<div id="likert-scale-data" class="section level1">
+<h1>Likert Scale Data</h1>
+<p>Likert (pron: <em>LICK-ert</em>) data are ordered responses or ratings to questions commonly collected via surveys. Response options are usually symmetrical (e.g. disagree, somewhat disagree, somewhat agree, agree, etc.) and contain an indifferent midpoint response (e.g. neutral, neither agree nor disagree).</p>
+<p>Technically, a Likert <em>item</em> is a single question, and a Likert <em>scale</em> is a collection of Likert items viewed together as a collective measure of some trait of interest. I find this to be a key point in the appeal of a <em>latent variable</em> interpretation to Likert scale data. We are interested in some underlying trait which cannot be measured directly, so instead we use a tool of survey questions which all aim to measure in varying degrees this trait of interest. This implies that an individuals responses to Likert items should be correlated within the scale, as they all aim to measure the same underlying trait. This notion and some of its advantages are also outlined in <span class="citation">Fox (<a href="#ref-fox2010" role="doc-biblioref">2010</a>)</span>.</p>
+<p>Despite the intuitive notion of a latent trait of interest, what appears to be the most common approach to analysing Likert scale data is to model the responses directly by mapping them to an interval scale. For example: strongly disagree = 1, disagree = 2, neutral = 3, agree = 4, strongly agree = 5. This mapping maintains the ordering but introduces an assumed metric on responses, e.g. the distance between strongly disagree and disagree is equal to the distance between disagree and neutral. For each item on a <span class="math inline">\(K\)</span>-point response scale, only <span class="math inline">\(K\)</span> values are possible, and on a Likert scale comprised of <span class="math inline">\(Q\)</span> items where analysis is based on the item averaged responses for each individual, the only possible values for an individuals item-averaged responses are
+<span class="math display">\[
+\bar Y \in \{1,(Q+1)/Q,(Q+2)/Q,...,(QK-1)/Q,K\}.
+\]</span></p>
+<p>This metric is arbitrary, we may well equally justify that strongly disagree is further from disagree than disagree is from neutral and similarly for agree and strongly agree. This could be represented by adjusting the mapping, e.g. strongly disagree = 1, disagree = 3, neutral = 4, agree = 5, and strongly agree = 7, say. In the case of multiple Likert items forming the scale, the veraged score is analysed according to the continuous metric by a t-test or linear regression.</p>
+<p>A common alternative is to avoid parametric assumptions and instead rely on rank tests, such as Mann-Whitney U and Kruskal-Wallis. These may be reasonable for a single Likert item, however, when combining Likert items into a scale it’s unclear to me why analysing aggregated ranks should be the approach, rather than analysing item specific ranks and incorporating these results across items.</p>
+<p>The key problem I have with the above approaches is that neither provides a model for the data generating process. There is no coherent mechanism implied which could be used to simulate Likert scale data. Sure, we could assume some discrete distribution over the responses within each item, simulate data, and conduct an analysis, but the simulated data in no way relates to the model assumed for analysis.</p>
+<p>A reasonable model for the Likert scale should be able to generate data which is consistent with what could actually be observed in reality.</p>
+</div>
+<div id="ordinal-models-for-likert-scale-data" class="section level1">
+<h1>Ordinal Models for Likert Scale Data</h1>
+<p>Although not intuitive for all ordinal data, the concept of a continuous latent variable underlying the ordinal responses to Likert scale data is appealing.</p>
+<p>For an individual <span class="math inline">\(i\)</span>, we are interested in the underlying unobservable trait <span class="math inline">\(Y_i^\star\in\mathbb R\)</span> as measured by their Likert scale responses.</p>
+<p>We observe some random vector <span class="math inline">\(Y_i=(Y_{i1},...,Y_{iQ})\)</span> giving an individuals responses to all of the <span class="math inline">\(Q\)</span> items, with the response to item <span class="math inline">\(q\in\{1,...,Q\}\)</span> being made on a <span class="math inline">\(K_q\)</span>-point scale, that is <span class="math inline">\(Y_{iq}\in\{1,...,K_q\}\)</span>. Generally, <span class="math inline">\(K_q=K\)</span> for all <span class="math inline">\(q\in\{1,...,Q\}\)</span>. We assume the individuals responses for an item <span class="math inline">\(q\)</span> is governed by a continuous latent trait vector, <span class="math inline">\(Y_i^\star = (Y_{i1}^\star,...,Y_{iQ}^\star)\in\mathbb R^Q\)</span> according to <span class="math inline">\(K_q-1\)</span> thresholds, <span class="math inline">\(-\infty=\tau_{q,0}&lt;\tau_{q,1}&lt;\cdots&lt;\tau_{q,K_q-1}&lt;\tau_{q,K_q}=\infty\)</span>,</p>
+<p>The value of <span class="math inline">\(Y_i^\star\)</span> then determines the responses <span class="math inline">\(Y_i\)</span> by
+<span class="math display">\[
+Y_{iq} = k \iff Y_{iq}^\star \in (\tau_{q,k-1},\tau_{q,k}],\quad q\in\{1,...,Q\}
+\]</span></p>
+<p>We have assumed that each Likert item relates to its own latent trait, however, for Likert scale data, all items by construction are meant to measure the same trait of interest, and therefore, we might prefer to assume a singular latent variable which governs all responses. Additionally, we might assume that thresholds are constant across items, that is <span class="math inline">\(\tau_{q,k} = \tau_k\)</span> for all <span class="math inline">\(q\)</span>.</p>
+<p>To model the latent trait, we may assume
+<span class="math display">\[
+Y_{iq}^\star = \mu_{iq} + \sigma_{iq}\epsilon_{iq}
+\]</span>
+where <span class="math inline">\(\epsilon\sim F(\cdot)\)</span> for some location-scale family distribution <span class="math inline">\(F\)</span>. Usual choices are normal, logistic, and Gumbel (extreme value) distributions.</p>
+<p>Then,
+<span class="math display">\[
+\begin{aligned}
+\mathbb P(Y_{iq} \leq k|\mu_{iq},\sigma_{iq}) &amp;= \mathbb P(Y_{iq}^\star\leq\tau_{q,k}|\mu_{iq},\sigma_{iq}) \\
+&amp;= \mathbb P(\mu_{iq} + \sigma_{iq}\epsilon_{iq}\leq\tau_{q,k}|\mu_{iq},\sigma_{iq}) \\
+&amp;= \mathbb P\left(\epsilon_{iq} \leq \frac{\tau_{q,k} - \mu_{iq}}{\sigma_{iq}}|\mu_{iq},\sigma_{iq}\right) \\
+&amp;= F\left(\frac{\tau_{q,k} - \mu_{iq}}{\sigma_{iq}}|\mu_{iq},\sigma_{iq}\right).
+\end{aligned}
+\]</span>
+From this, the discrete probability function for each response item can be calculated
+<span class="math display">\[
+\begin{aligned}
+\mathbb P(Y_{iq} = k) &amp;= \mathbb P(Y_{iq} \leq k) - \mathbb P(Y_{iq} &lt; k) \\
+&amp;= F\left(\frac{\tau_{q,k} - \mu_{iq}}{\sigma_{iq}}|\mu_{iq},\sigma_{iq}\right) - F\left(\frac{\tau_{q,k-1} - \mu_{iq}}{\sigma_{iq}}|\mu_{iq},\sigma_{iq}\right).
+\end{aligned}
+\]</span>
+We could equivalently define probababilities in the other direction
+Then,
+<span class="math display">\[
+\begin{aligned}
+\mathbb P(Y_{iq} &gt; k|\mu_{iq},\sigma_{iq}) &amp;= \mathbb P(Y_{iq}^\star&gt;\tau_{qk}|\mu_{iq},\sigma_{iq}) \\
+&amp;= \mathbb P(\mu_{iq} + \sigma_{iq}\epsilon_{iq}&gt;\tau_{qk}|\mu_{iq},\sigma_{iq}) \\
+&amp;= \mathbb P\left(\epsilon_{iq} &gt; \frac{\tau_{qk} - \mu_{iq}}{\sigma_{iq}}|\mu_{iq},\sigma_{iq}\right) \\
+&amp;= F\left(\frac{\mu_{iq} - \tau_{qk}}{\sigma_{iq}}|\mu_{iq},\sigma_{iq}\right).
+\end{aligned}
+\]</span></p>
+<p>Individual-level and item-level effects can then be incoroporated via <span class="math inline">\(\mu_{iq}\)</span> and <span class="math inline">\(\sigma_{iq}\)</span>. A simple approach is to assume a constant baseline mean and variance which are adjusted by additional covariates
+<span class="math display">\[
+\begin{aligned}
+Y_{iq}^\star &amp;= \mu_{iq} + \sigma_{iq}\epsilon_{iq} \\
+&amp;= \mu_0 + X_i\beta + \sigma\epsilon_i.
+\end{aligned}
+\]</span></p>
+<p>One issue when it comes to estimation is that the model is overparameterised: a change in the threshold value can be compensated for by a change in the linear predictor value. E.g. if <span class="math inline">\(\tau_{q,k}^\star = \tau_{q,k} + c\)</span> then take <span class="math inline">\(\mu_{iq}^\star = \mu_{iq} + c\)</span>. Similarly, a change in the variance can be compensated for by a rescaling of the thresholds and mean. The common approach is to fix the location and scale parameters and/or as many threshold parameters as necessary to make the model identifiable. Usually it may be enough to:</p>
+<ul>
+<li>fix the location and scale parameters <span class="math inline">\(\mu_0 = 0\)</span> and <span class="math inline">\(\sigma=1\)</span>.</li>
+<li>fix the boundary threshold parameters <span class="math inline">\(\tau_{q,1}\)</span> and <span class="math inline">\(\tau_{q,K_q-1}\)</span>.</li>
+</ul>
+<p><span class="citation">Liddell and Kruschke (<a href="#ref-liddell2018" role="doc-biblioref">2018</a>)</span> propose an intuitive parameterisation where <span class="math inline">\(\tau_1=1.5\)</span> and <span class="math inline">\(\tau_{K-1}=K-0.5\)</span> are fixed. In this way, the base mean <span class="math inline">\(\mu_0\)</span> is interpreted intuitively as the value of the averaged items.</p>
+</div>
+<div id="examples" class="section level1">
+<h1>Examples</h1>
+<pre class="r"><code>library(rstan)
+library(brms)
+library(bayesplot)
+library(dplyr)
+library(tidyr)
+library(mvtnorm)
+library(ordinal)</code></pre>
+<div id="parametric" class="section level2">
+<h2>Parametric</h2>
+</div>
+<div id="one-item-example" class="section level2">
+<h2>One-item example</h2>
+<p>Suppose that for each of <span class="math inline">\(n\)</span> individuals, <span class="math inline">\(Y_i^\star \sim D(\mu_i,\sigma)\)</span> for <span class="math inline">\(D\in\{N, L, G\}\)</span> with the value of <span class="math inline">\(Y_i\)</span> governed by thresholds <span class="math inline">\(\tau_{1:4} = (-1,-0.5,0.5,1)\)</span>.</p>
+<p>We assume a reasonably large sample size of <span class="math inline">\(n=500\)</span> to recover the true parameter values within reasonable variation.</p>
+<pre class="r"><code>dgumbel &lt;- function(x, mu = 0, sigma = 1, log = FALSE) {
+  z &lt;- (x - mu) / sigma
+  l &lt;- -log(sigma) - (z + exp(-z))
+  if(log)
+    return(l)
+  else
+    return(exp(l))
+}
+pgumbel &lt;- function(x, mu = 0, sigma = 1, log = FALSE) {
+  z &lt;- (x - mu) / sigma
+  l &lt;- -exp(-z)
+  if(log)
+    exp(l)
+  else
+    return(exp(l))
+}
+rgumbel &lt;- function(n, mu = 0, sigma = 1) {
+  mu - sigma * log( - log(runif(n)))
+}</code></pre>
+<pre class="r"><code>tau &lt;- c(-1.5, -1, -0.5, 0.5, 1, 1.5)
+K &lt;- length(tau) + 1
+p1 &lt;- diff(c(0, pnorm(tau), 1))
+p2 &lt;- diff(c(0, plogis(tau), 1))
+p3 &lt;- diff(c(0, pgumbel(tau), 1))
+par(mfrow = c(2,2), mar = c(4,4.5,2,1), oma = c(0,0,0,0))
+curve(dnorm(x), xlim = c(-10, 10), xlab = expression(y^{&quot;*&quot;}), ylab = expression(f(y^{&quot;*&quot;})), main = &quot;a) Latent&quot;)
+curve(dlogis(x), add = T, lty = 2)
+curve(dgumbel(x), add = T, lty = 3)
+legend(&quot;topleft&quot;, legend = c(&quot;Normal&quot;, &quot;Logistic&quot;, &quot;Gumbel&quot;), lty = 1:3, bty = &#39;n&#39;)
+plot(1:K, p1, type = &#39;h&#39;, ylim = c(0, 0.5), ylab = expression(f(y)), xlab = &quot;y&quot;, main = &quot;b) Normal&quot;)
+plot(1:K, p2, type = &#39;h&#39;, ylim = c(0, 0.5), ylab = expression(f(y)), xlab = &quot;y&quot;, main = &quot;c) Logistic&quot;)
+plot(1:K, p3, type = &#39;h&#39;, ylim = c(0, 0.5), ylab = expression(f(y)), xlab = &quot;y&quot;, main = &quot;d) Gumbel&quot;)</code></pre>
+<div class="figure"><span id="fig:unnamed-chunk-2"></span>
+<img src="https://jatotterdell.github.io/post/2019-04-25-ordinal-models-likert-scale-data_files/figure-html/unnamed-chunk-2-1.png" alt="Latent variable and response variable for normal, logistic, and Gumbel distributions with thresholds $\tau=(-1.5,-1.0,-0.5,0.5,1.0,1.5)$." width="672" />
+<p class="caption">
+Figure 1: Latent variable and response variable for normal, logistic, and Gumbel distributions with thresholds <span class="math inline">\(\tau=(-1.5,-1.0,-0.5,0.5,1.0,1.5)\)</span>.
+</p>
+</div>
+<pre class="r"><code>gen_one_item_data &lt;- function(n, mu = 0, sig = 1, tau = c(-1, -0.5, 0.5, 1), dist = &quot;normal&quot;) {
+  rgen &lt;- switch(dist,
+    normal = rnorm,
+    logistic = rlogis,
+    gumbel = rgumbel
+  )
+  y_star &lt;- rgen(n, mu, sig)
+  y &lt;- findInterval(y_star, c(-Inf, tau, Inf))
+  return(y)
+}</code></pre>
+<pre class="stan"><code>// one_item_model
+data {
+  int&lt;lower=1&gt; N;
+  int&lt;lower=1&gt; P;
+  int&lt;lower=1&gt; K;
+  int&lt;lower=1,upper=K&gt; y[N];
+  row_vector[P] x[N];
+}
+
+parameters {
+  vector[P] beta;
+  ordered[K-1] tau;
+}
+
+model {
+  vector[K] p;
+  beta ~ normal(0, 10);
+  for(n in 1:N) {
+    real eta;
+    eta = x[n]*beta;
+    p[1] = Phi(tau[1] - eta);
+    for(k in 2:(K-1))
+      p[k] = Phi(tau[k] - eta) - Phi(tau[k-1] - eta);
+    p[K] = 1 - Phi(tau[K-1] - eta);
+    y[n] ~ categorical(p);
+  }
+}</code></pre>
+<pre class="stan"><code>// one_item_model_alt
+data {
+  int&lt;lower=1&gt; N;
+  int&lt;lower=1&gt; P;
+  int&lt;lower=1&gt; K;
+  int&lt;lower=1,upper=K&gt; y[N];
+  row_vector[P] x[N];
+}
+
+parameters {
+  real&lt;lower=0&gt; sigma;
+  vector[P] beta;
+  ordered[K-3] tau;
+}
+transformed parameters {
+  ordered[K-1] tau_all;
+  tau_all[1] = 1.5;
+  tau_all[K-1] = K - 0.5;
+  tau_all[2:(K-2)] = tau;
+}
+
+model {
+  vector[K] p;
+  beta ~ normal(0, 10);
+  for(n in 1:N) {
+    real eta;
+    eta = x[n]*beta;
+    p[1] = Phi((tau_all[1] - eta) / sigma);
+    for(k in 2:(K-1))
+      p[k] = Phi((tau_all[k] - eta) / sigma) - Phi((tau_all[k-1] - eta) / sigma);
+    p[K] = 1 - Phi((tau_all[K-1] - eta) / sigma);
+    y[n] ~ categorical(p);
+  }
+}</code></pre>
+<pre class="r"><code>N &lt;- 500
+b &lt;- 1
+tau &lt;- c(-1.5, -0.5, 0.5, 1.5)
+K &lt;- length(tau) + 1
+x &lt;- rep(c(0, 1), each = N / 2)
+m &lt;- x*b
+y &lt;- gen_one_item_data(N, m, 1)
+# ystar &lt;- rnorm(N, m, 1)
+# y &lt;- findInterval(ystar, c(-Inf, tau, Inf))
+
+p1 &lt;- diff(c(0, pnorm(tau), 1))
+p2 &lt;- diff(c(0, pnorm(tau - 1), 1))
+cbind(&quot;Pop value (x = 0)&quot; = p1, &quot;Pop value (x = 1)&quot; = p2, prop.table(table(y, x), 2))</code></pre>
+<pre><code>##   Pop value (x = 0) Pop value (x = 1)     0     1
+## 1         0.0668072       0.006209665 0.164 0.024
+## 2         0.2417303       0.060597536 0.116 0.044
+## 3         0.3829249       0.241730337 0.400 0.196
+## 4         0.2417303       0.382924923 0.160 0.192
+## 5         0.0668072       0.308537539 0.160 0.544</code></pre>
+<pre class="r"><code>c(&quot;Population value&quot; = sum(p1*1:K), &quot;Sample value&quot; = mean(y[x == 0]))</code></pre>
+<pre><code>## Population value     Sample value 
+##            3.000            3.036</code></pre>
+<pre class="r"><code>c(&quot;Population value&quot; = sum(p2*1:K), &quot;Sample value&quot; = mean(y[x == 1]))</code></pre>
+<pre><code>## Population value     Sample value 
+##         3.926983         4.188000</code></pre>
+<pre class="r"><code>dat &lt;- list(N = N, K = 5, P = 1, y = y, x = cbind(x))
+fit &lt;- sampling(one_item_model, data = dat, refresh = 0)
+
+dat &lt;- list(N = N, K = 5, P = 2, y = y, x = cbind(1, x))
+fit_alt &lt;- sampling(one_item_model_alt, data = dat, refresh = 0)</code></pre>
+<pre><code>## Warning: The largest R-hat is NA, indicating chains have not mixed.
+## Running the chains for more iterations may help. See
+## http://mc-stan.org/misc/warnings.html#r-hat</code></pre>
+<pre><code>## Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
+## Running the chains for more iterations may help. See
+## http://mc-stan.org/misc/warnings.html#bulk-ess</code></pre>
+<pre><code>## Warning: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.
+## Running the chains for more iterations may help. See
+## http://mc-stan.org/misc/warnings.html#tail-ess</code></pre>
+<pre class="r"><code>print(fit)</code></pre>
+<pre><code>## Inference for Stan model: 30a6fb43fd8f0f817443ccb0218ae9f6.
+## 4 chains, each with iter=2000; warmup=1000; thin=1; 
+## post-warmup draws per chain=1000, total post-warmup draws=4000.
+## 
+##            mean se_mean   sd    2.5%     25%     50%     75%   97.5% n_eff Rhat
+## beta[1]    1.06    0.00 0.10    0.86    0.99    1.06    1.13    1.25  3701    1
+## tau[1]    -0.97    0.00 0.09   -1.15   -1.03   -0.97   -0.91   -0.79  2986    1
+## tau[2]    -0.54    0.00 0.08   -0.69   -0.60   -0.54   -0.49   -0.39  3716    1
+## tau[3]     0.44    0.00 0.08    0.30    0.39    0.44    0.49    0.59  3739    1
+## tau[4]     0.97    0.00 0.08    0.81    0.91    0.97    1.02    1.13  3568    1
+## lp__    -678.36    0.04 1.59 -682.42 -679.10 -678.03 -677.21 -676.34  1656    1
+## 
+## Samples were drawn using NUTS(diag_e) at Thu Apr 30 15:49:51 2020.
+## For each parameter, n_eff is a crude measure of effective sample size,
+## and Rhat is the potential scale reduction factor on split chains (at 
+## convergence, Rhat=1).</code></pre>
+<pre class="r"><code>print(fit_alt)</code></pre>
+<pre><code>## Inference for Stan model: 1c4e6e118a80c225f30d92859ecb91cd.
+## 4 chains, each with iter=2000; warmup=1000; thin=1; 
+## post-warmup draws per chain=1000, total post-warmup draws=4000.
+## 
+##               mean se_mean   sd    2.5%     25%     50%     75%   97.5% n_eff
+## sigma         1.58    0.00 0.08    1.42    1.52    1.57    1.63    1.74  3380
+## beta[1]       3.00    0.00 0.11    2.77    2.92    3.00    3.07    3.21  2476
+## beta[2]       1.65    0.00 0.16    1.34    1.54    1.65    1.76    1.98  2364
+## tau[1]        2.15    0.00 0.08    1.99    2.09    2.15    2.20    2.32  2663
+## tau[2]        3.68    0.00 0.07    3.54    3.63    3.68    3.73    3.82  4263
+## tau_all[1]    1.50     NaN 0.00    1.50    1.50    1.50    1.50    1.50   NaN
+## tau_all[2]    2.15    0.00 0.08    1.99    2.09    2.15    2.20    2.32  2663
+## tau_all[3]    3.68    0.00 0.07    3.54    3.63    3.68    3.73    3.82  4263
+## tau_all[4]    4.50     NaN 0.00    4.50    4.50    4.50    4.50    4.50   NaN
+## lp__       -676.14    0.04 1.57 -679.94 -676.96 -675.86 -675.00 -674.04  1576
+##            Rhat
+## sigma         1
+## beta[1]       1
+## beta[2]       1
+## tau[1]        1
+## tau[2]        1
+## tau_all[1]  NaN
+## tau_all[2]    1
+## tau_all[3]    1
+## tau_all[4]  NaN
+## lp__          1
+## 
+## Samples were drawn using NUTS(diag_e) at Thu Apr 30 15:50:11 2020.
+## For each parameter, n_eff is a crude measure of effective sample size,
+## and Rhat is the potential scale reduction factor on split chains (at 
+## convergence, Rhat=1).</code></pre>
+<pre class="r"><code>plot(fit, plotfun = &quot;hist&quot;, bins = 50)</code></pre>
+<p><img src="https://jatotterdell.github.io/post/2019-04-25-ordinal-models-likert-scale-data_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<pre class="r"><code>plot(fit_alt, par = c(&quot;sigma&quot;, &quot;beta&quot;, &quot;tau[1]&quot;, &quot;tau[2]&quot;), plotfun = &quot;hist&quot;, bins = 50)</code></pre>
+<p><img src="https://jatotterdell.github.io/post/2019-04-25-ordinal-models-likert-scale-data_files/figure-html/unnamed-chunk-6-2.png" width="672" /></p>
+<pre class="r"><code>s1 &lt;- as.matrix(fit)
+s2 &lt;- as.matrix(fit_alt)
+
+tau2 &lt;- s1[, 3]
+tau2alt &lt;- (s2[, 7] - s2[, 2]) / s2[, 1]
+cbind(quantile(tau2), quantile(tau2alt))</code></pre>
+<pre><code>##            [,1]       [,2]
+## 0%   -0.8208653 -0.8565690
+## 25%  -0.5957087 -0.5910559
+## 50%  -0.5430587 -0.5380349
+## 75%  -0.4913438 -0.4857584
+## 100% -0.2721827 -0.2233698</code></pre>
+<hr />
+</div>
+</div>
+<div id="location-scale-distributions" class="section level1">
+<h1>Location-Scale Distributions</h1>
+<p>Define <span class="math inline">\(\mu\in\mathbb R\)</span>, <span class="math inline">\(\sigma\in\mathbb R^+\)</span>, and <span class="math inline">\(z = \frac{x-\mu}{\sigma}\)</span>.</p>
+<div id="normal" class="section level2">
+<h2>Normal</h2>
+<p><span class="math display">\[
+\begin{aligned}
+f(x|\mu,\sigma) &amp;= \frac{1}{\sigma\sqrt{2\pi}}\exp\left(\frac{z^2}{2}\right) \\
+F(x|\mu,\sigma) &amp;= \frac{1}{2}\left(1 + \text{erf}\left[\frac{z}{\sqrt{2}}\right]\right)\\
+Q(p|\mu,\sigma) &amp;= \mu + \sigma\sqrt{2}\text{erf}^{-1}(2p-1) \\
+&amp;= \mu + \sigma\Phi^{-1}(p) \\
+\text{erf}(x) &amp;= \frac{2}{\sqrt{\pi}}\int_0^x e^{-t^2}dt
+\end{aligned}
+\]</span></p>
+</div>
+<div id="logistic" class="section level2">
+<h2>Logistic</h2>
+<p><span class="math display">\[
+\begin{aligned}
+f(x|\mu,\sigma) &amp;= \frac{e^{-z}}{\sigma(1 + e^{-z})^2}\\
+F(x|\mu,\sigma) &amp;= \frac{1}{1 + e^{-z}} \\
+Q(p|\mu,\sigma) &amp;= \mu + \sigma\ln\left(\frac{p}{1-p}\right)
+\end{aligned}
+\]</span></p>
+</div>
+<div id="gumbel" class="section level2">
+<h2>Gumbel</h2>
+<p><span class="math display">\[
+\begin{aligned}
+f(x|\mu,\sigma) &amp;= \sigma^{-1}\exp(-(z+\exp(-z))\\
+F(x|\mu,\sigma) &amp;= \exp(-\exp(-z)) \\
+Q(p|\mu,\sigma) &amp;= \mu - \sigma\ln(-\ln(p))
+\end{aligned}
+\]</span></p>
+<hr />
+</div>
+</div>
+<div id="references" class="section level1 unnumbered">
+<h1>References</h1>
+<div id="refs" class="references">
+<div id="ref-burkner2018">
+<p>Bürkner, Paul-Christian, and Matti Vuorre. 2018. “Ordinal Regression Models in Psychology: A Tutorial.” <em>Advances in Methods and Practices in Psychological Science</em>, 2515245918823199.</p>
+</div>
+<div id="ref-carifio2008">
+<p>Carifio, James, and Rocco Perla. 2008. “Resolving the 50-Year Debate Around Using and Misusing Likert Scales.” <em>Medical Education</em> 42 (12): 1150–2.</p>
+</div>
+<div id="ref-fox2010">
+<p>Fox, Jean-Paul. 2010. <em>Bayesian Item Response Modeling: Theory and Applications</em>. Springer Science &amp; Business Media.</p>
+</div>
+<div id="ref-harpe2015">
+<p>Harpe, Spencer E. 2015. “How to Analyze Likert and Other Rating Scale Data.” <em>Currents in Pharmacy Teaching and Learning</em> 7 (6): 836–50.</p>
+</div>
+<div id="ref-liddell2018">
+<p>Liddell, Torrin M, and John K Kruschke. 2018. “Analyzing Ordinal Data with Metric Models: What Could Possibly Go Wrong?” <em>Journal of Experimental Social Psychology</em> 79: 328–48.</p>
+</div>
+<div id="ref-norman2010">
+<p>Norman, Geoff. 2010. “Likert Scales, Levels of Measurement and the ‘Laws’ of Statistics.” <em>Advances in Health Sciences Education</em> 15 (5): 625–32.</p>
+</div>
+<div id="ref-sullivan2013">
+<p>Sullivan, Gail M, and Anthony R Artino Jr. 2013. “Analyzing and Interpreting Data from Likert-Type Scales.” <em>Journal of Graduate Medical Education</em> 5 (4): 541–42.</p>
+</div>
+</div>
+</div>
+
+  </div>
+
+  <div id=links>
+    
+      <a class="basic-alignment left" href="https://jatotterdell.github.io/post/2019/04/11/semiparametric-baseline-hazard-using-monotone-splines/">&laquo; Semiparametric baseline hazard using monotone splines</a>
+    
+    
+      <a class="basic-alignment left" href="https://jatotterdell.github.io/post/2019/05/08/affine-transformation-multivariate-normal-probabilities/">Multivariate Normal Probability that Margin is Maximum &raquo;</a>
+    
+  </div>
+</section>
+
+<section id="comments">
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+
+(function() {
+      
+      
+      if (window.location.hostname == "localhost")
+                return;
+
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      var disqus_shortname = '';
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</section>
+
+
+  
+  
+<script src="https://jatotterdell.github.io/js/math-code.js"></script>
+<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+<script src="//cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="//cdn.bootcss.com/highlight.js/9.12.0/languages/r.min.js"></script>
+
+ <script>
+hljs.configure({languages: []});
+hljs.initHighlightingOnLoad();
+</script>
+
+<script type="text/x-mathjax-config"> 
+    MathJax.Hub.Config({ 
+        "HTML-CSS": { scale: 95, linebreaks: { automatic: true } }, 
+        SVG: { linebreaks: { automatic:true } }, 
+        // displayAlign: "left" 
+        });
+</script>
+
+</body>
+</html>
+

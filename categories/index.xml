@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Categories on James Totterdell</title>
+    <link>https://jatotterdell.github.io/categories/</link>
+    <description>Recent content in Categories on James Totterdell</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Mon, 02 Sep 2019 00:00:00 +0000</lastBuildDate><atom:link href="https://jatotterdell.github.io/categories/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>anova</title>
+      <link>https://jatotterdell.github.io/categories/anova/</link>
+      <pubDate>Mon, 02 Sep 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/categories/anova/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>bayesian inference</title>
+      <link>https://jatotterdell.github.io/categories/bayesian-inference/</link>
+      <pubDate>Mon, 02 Sep 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/categories/bayesian-inference/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>logistic regression</title>
+      <link>https://jatotterdell.github.io/categories/logistic-regression/</link>
+      <pubDate>Tue, 04 Jun 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/categories/logistic-regression/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>variational-bayes</title>
+      <link>https://jatotterdell.github.io/categories/variational-bayes/</link>
+      <pubDate>Sat, 25 May 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/categories/variational-bayes/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>linear regression</title>
+      <link>https://jatotterdell.github.io/categories/linear-regression/</link>
+      <pubDate>Wed, 15 May 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/categories/linear-regression/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>multivariate normal</title>
+      <link>https://jatotterdell.github.io/categories/multivariate-normal/</link>
+      <pubDate>Wed, 08 May 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/categories/multivariate-normal/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>likert</title>
+      <link>https://jatotterdell.github.io/categories/likert/</link>
+      <pubDate>Thu, 25 Apr 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/categories/likert/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>ordinal</title>
+      <link>https://jatotterdell.github.io/categories/ordinal/</link>
+      <pubDate>Thu, 25 Apr 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/categories/ordinal/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>survival-analysis</title>
+      <link>https://jatotterdell.github.io/categories/survival-analysis/</link>
+      <pubDate>Thu, 11 Apr 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/categories/survival-analysis/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>

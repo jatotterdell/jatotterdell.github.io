@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Posts on James Totterdell</title>
+    <link>https://jatotterdell.github.io/post/</link>
+    <description>Recent content in Posts on James Totterdell</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Mon, 02 Sep 2019 00:00:00 +0000</lastBuildDate><atom:link href="https://jatotterdell.github.io/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Bayesian ANOVA Parameterisation</title>
+      <link>https://jatotterdell.github.io/post/2019/09/02/bayesian-anova-parameterisation/</link>
+      <pubDate>Mon, 02 Sep 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/post/2019/09/02/bayesian-anova-parameterisation/</guid>
+      <description>Background ANOVA methods are essentially about “batching” related model parameters to aid interpretability of the results (e.g. Gelman 2005). This batching is usually achieved by enforcing some kind of constraint on the parameters within the model. In classical inference, such constraints can be enforced in a number of ways and, to some extent, immaterially affect the inference due to the arbitrariness of the design matrix. However, in Bayesian inference, parameterisation determines our priors which influence our inferences.</description>
+    </item>
+    
+    <item>
+      <title>Prior Coding Effects</title>
+      <link>https://jatotterdell.github.io/post/2019/06/04/prior-coding-effects/</link>
+      <pubDate>Tue, 04 Jun 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/post/2019/06/04/prior-coding-effects/</guid>
+      <description>To a certain extent, coding matrices in frequentist inference are arbitrary. We might choose a certain coding to make inference for hypotheses straightforward in the context of the model parameterisation. For example (see vignette Venables 2018), assuming \(p\) cell means of interest \(\mu\), we could begin with the incidence matrix \[ X = \begin{pmatrix} \mathbf 1_{n_1} &amp;amp; 0 &amp;amp; \cdots &amp;amp; 0 \\ 0 &amp;amp; \mathbf 1_{n_2} &amp;amp; \cdots &amp;amp; 0 \\ \vdots &amp;amp; \vdots &amp;amp; \ddots &amp;amp; \vdots \\ 0 &amp;amp; 0 &amp;amp; \cdots &amp;amp; \mathbf 1_{n_p} \end{pmatrix} \] with linear predictor \(\eta = X\mu\).</description>
+    </item>
+    
+    <item>
+      <title>Logistic Regression Variational Approximation - I</title>
+      <link>https://jatotterdell.github.io/post/2019/05/25/logistic-regression-variational-approximation/</link>
+      <pubDate>Sat, 25 May 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/post/2019/05/25/logistic-regression-variational-approximation/</guid>
+      <description>Background Approximation Bounds Bohning Jaakkola-Jordan Saul-Jordan  Examples Example 1 Example 2 Example 3 (divergence)  Summary Useful Identities References   Background Previously, I had worked through derivations of variational approximations for a linear regression model and proportional hazards exponential model with right-censoring. This post works through approximations for logistic regression models.
+Some general references on variational approximations for logistic regression are Murphy (2012), Nolan and Wand (2017), and Wand (2017).</description>
+    </item>
+    
+    <item>
+      <title>Linear Regression Variational Approximation</title>
+      <link>https://jatotterdell.github.io/post/2019/05/15/linear-regression-variational-approximation/</link>
+      <pubDate>Wed, 15 May 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/post/2019/05/15/linear-regression-variational-approximation/</guid>
+      <description>For reference, a derivation of a variational approximation for linear regression following (Ormerod 2008) and (Ormerod and Wand 2010).
+Recall the evidence lower bound is given by \[ \begin{aligned} \ln p(y|\theta) &amp;amp;\geq \mathcal{L}(y|\theta;q) \\ &amp;amp;= \mathbb E_q[\ln p(y,\theta) - \ln q(\theta)] \\ &amp;amp;= \mathbb E_q[\ln p(y|\theta)] + \mathbb E_q[\ln p(\theta)] + \mathbb H_q[\theta]. \end{aligned} \]
+The model we are interested in is \[ \begin{aligned} y|\beta,\sigma^2 &amp;amp;\sim N(X\beta, \sigma^2 I_n) \\ \beta &amp;amp;\sim N(\mu_0,\Sigma_0) \\ \sigma^2 &amp;amp;\sim IG(a_0, b_0).</description>
+    </item>
+    
+    <item>
+      <title>Multivariate Normal Probability that Margin is Maximum</title>
+      <link>https://jatotterdell.github.io/post/2019/05/08/affine-transformation-multivariate-normal-probabilities/</link>
+      <pubDate>Wed, 08 May 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/post/2019/05/08/affine-transformation-multivariate-normal-probabilities/</guid>
+      <description>In response adaptive randomisation we are usually interested in weighting allocation ratios proportional to the probability that one treatment is the best out of a collection of treatments. For example, suppose we had \(P\) treatments, then for each treatment \(p\) we are interested in \[ \mathbb P(\beta_p = \text{max}\{\beta_{1:P}\}),\quad \text{for }p=1,...P. \] Equivalently, \[ \mathbb P(\beta_p - \beta_{1:P} &amp;gt; 0),\quad \text{for }p=1,...,P. \]
+In practice, these probabiliies would be calculated based on MCMC draws from the posterior, however, for the purposes of assessing trial characteristics, we may resort to normal approximations for running thousands of trial simulations.</description>
+    </item>
+    
+    <item>
+      <title>Ordinal Models Likert Scale Data</title>
+      <link>https://jatotterdell.github.io/post/2019/04/25/ordinal-models-likert-scale-data/</link>
+      <pubDate>Thu, 25 Apr 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/post/2019/04/25/ordinal-models-likert-scale-data/</guid>
+      <description>Background I was recently tasked with providing support to a study where the primary outcome was an eight-item, seven-point Likert scale. The proposal was to use a t-test to undertake the analysis. Being unfamiliar with the analysis of Likert scale responses I decided to do a bit of research into what was standard practice.
+There appears to be disagreement about whether the appropriate analysis should be based on parametric or non-parametric methods (Sullivan and Artino Jr 2013).</description>
+    </item>
+    
+    <item>
+      <title>Semiparametric baseline hazard using monotone splines</title>
+      <link>https://jatotterdell.github.io/post/2019/04/11/semiparametric-baseline-hazard-using-monotone-splines/</link>
+      <pubDate>Thu, 11 Apr 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/post/2019/04/11/semiparametric-baseline-hazard-using-monotone-splines/</guid>
+      <description>Background I had been following a conversation on the Stan discourse about implementing flexible survival models in Stan. A common thread of the discussions was the use of monotone splines (M-splines) and their corresponding integrated splines (I-splines) as a semi-parametric model for the baseline cumulative hazard (or baseline log-cumulative hazard).
+I have previously encountered the paper by (Ramsay and others 1988) whilst reading about spline extensions to the self-controlled case series (SCCS) method, but did not have much time to get into the details.</description>
+    </item>
+    
+    <item>
+      <title>Variational Inference for Exponential Proportional Hazards Model</title>
+      <link>https://jatotterdell.github.io/post/2019/03/28/variational-inference-for-exponential-proportional-hazards-model/</link>
+      <pubDate>Thu, 28 Mar 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/post/2019/03/28/variational-inference-for-exponential-proportional-hazards-model/</guid>
+      <description>Variational Approximations Variational Bayes is an approximate Bayesian inference method based on choosing an approximating density from some restricted class of densities by minimising the Kullback-Leibler divergence \[ \text{KL}(p\vert\vert q) = \int_\Omega \log\frac{p(\theta)}{q(\theta)} p(\theta)d\theta. \] In Bayesian inference, the density to be approximated is usually the posterior probability of some model parameter of interest \[ p(\theta|y) = \frac{p(\theta,y)}{p(y )}, \] and so the approximating density \(q\) is chosen as \[ q^\star(\theta) = \underset{q\in\mathcal{Q}}{\text{argmin }} \text{KL}(q\lvert\rvert p).</description>
+    </item>
+    
+  </channel>
+</rss>

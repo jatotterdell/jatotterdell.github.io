@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>multivariate normal on James Totterdell</title>
+    <link>https://jatotterdell.github.io/tags/multivariate-normal/</link>
+    <description>Recent content in multivariate normal on James Totterdell</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Wed, 08 May 2019 00:00:00 +0000</lastBuildDate><atom:link href="https://jatotterdell.github.io/tags/multivariate-normal/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Multivariate Normal Probability that Margin is Maximum</title>
+      <link>https://jatotterdell.github.io/post/2019/05/08/affine-transformation-multivariate-normal-probabilities/</link>
+      <pubDate>Wed, 08 May 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/post/2019/05/08/affine-transformation-multivariate-normal-probabilities/</guid>
+      <description>In response adaptive randomisation we are usually interested in weighting allocation ratios proportional to the probability that one treatment is the best out of a collection of treatments. For example, suppose we had \(P\) treatments, then for each treatment \(p\) we are interested in \[ \mathbb P(\beta_p = \text{max}\{\beta_{1:P}\}),\quad \text{for }p=1,...P. \] Equivalently, \[ \mathbb P(\beta_p - \beta_{1:P} &amp;gt; 0),\quad \text{for }p=1,...,P. \]
+In practice, these probabiliies would be calculated based on MCMC draws from the posterior, however, for the purposes of assessing trial characteristics, we may resort to normal approximations for running thousands of trial simulations.</description>
+    </item>
+    
+  </channel>
+</rss>

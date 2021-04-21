@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  
+
+  <link rel="icon" type="image/png" href="https://jatotterdell.github.io/favicon.png">
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/github-gist.css" rel="stylesheet" id="theme-stylesheet">
+  <script src="https://jatotterdell.github.io/js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+  <title>
+    
+    
+     Prior Coding Effects 
+    
+  </title>
+  <link rel="canonical" href="https://jatotterdell.github.io/post/2019/06/04/prior-coding-effects/">
+
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/fonts.css" />
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/style.css" />
+
+  
+</head>
+
+<body>
+<section id=nav>
+  <h1><a href="https://jatotterdell.github.io/">James Totterdell</a></h1>
+  <ul>
+    
+    <li><a href="https://jatotterdell.github.io/">Home</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/about/">About</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/categories/">Categories</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/tags/">Tags</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/quotes/">Quotes</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/index.xml">RSS</a></li>
+    
+  </ul>
+</section>
+
+
+<section id=content>
+  <h1> Prior Coding Effects </h1>
+
+  <div id=sub-header>
+    James Totterdell · 2019-06-04
+  </div>
+
+  <div class="entry-content">
+    
+
+
+<p>To a certain extent, coding matrices in frequentist inference are arbitrary. We might choose a certain coding to make inference for hypotheses straightforward in the context of the model parameterisation. For example <span class="citation">(see vignette Venables <a href="#ref-venables2018" role="doc-biblioref">2018</a>)</span>, assuming <span class="math inline">\(p\)</span> cell means of interest <span class="math inline">\(\mu\)</span>, we could begin with the <em>incidence matrix</em>
+<span class="math display">\[
+X = \begin{pmatrix}
+\mathbf 1_{n_1} &amp; 0 &amp; \cdots &amp; 0 \\
+0 &amp; \mathbf 1_{n_2} &amp; \cdots &amp; 0 \\
+\vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+0 &amp; 0 &amp; \cdots &amp; \mathbf 1_{n_p}
+\end{pmatrix}
+\]</span>
+with linear predictor <span class="math inline">\(\eta = X\mu\)</span>. From this we can transform our design matrix into any other linear coding, <span class="math inline">\(C = B^{-1}\)</span>, by using appropriate invertible transformation matrices such that <span class="math inline">\(\beta = C\mu\)</span> so that <span class="math inline">\(\eta = XB\beta\)</span>. We can essentially always parameterise the model in terms of cell means and work out what we want later.</p>
+<p>In Bayesian analyses, if careful consideration is not given to priors, our model parameterisation may influences our inferences in unintended ways. Setting by some kind of default specification may not always reflect the prior information we wish to encode, and without careful thought, may imply some undesired model characteristics.</p>
+<p>For example, suppose we were undertaking a three arm trial to compare the effects of three independent treatments. We are interested in making a decision regarding every treatment comparison. By default, we might assume a logistic regression model and code in terms of treatment effects
+<span class="math display">\[
+\begin{aligned}
+\eta_i &amp;= \beta_0 + \beta_1 x_{i1} + \beta_2 x_{i2} \\
+\beta &amp;\sim N(0, \sigma^2 I_3) \\
+y_i|\beta &amp;\sim \text{Ber}(\text{logit}^{-1}\eta_i).
+\end{aligned}
+\]</span>
+We are then interested in <span class="math inline">\(\mathbb P_{\beta|Y}(\beta_1 &gt; 0), \mathbb P_{\beta|Y}(\beta_2 &gt; 0)\)</span>, and <span class="math inline">\(\mathbb P_{\beta|Y}(\beta_2 - \beta_1 &gt; 0)\)</span>.</p>
+<p>Alternatively, we might have decided to parameterise in terms of cell means
+<span class="math display">\[
+\begin{aligned}
+\eta_i &amp;= \beta^C_0 x_{i0} + \beta^C_1 x_{i1} + \beta^C_2 x_{i2} \\
+\beta^C &amp;\sim N(0, \sigma^2 I_3) \\
+y_i|\beta^C &amp;\sim \text{Ber}(\text{logit}^{-1}\eta_i).
+\end{aligned}
+\]</span>
+We are then interested in <span class="math inline">\(\mathbb P_{\beta^C|Y}(\beta^C_1 - \beta_0^C &gt; 0), \mathbb P_{\beta^C|Y}(\beta^C_2 - \beta_1^C &gt; 0)\)</span>, and <span class="math inline">\(\mathbb P_{\beta^C|Y}(\beta_2 - \beta_1 &gt; 0)\)</span>.</p>
+<p>Suppose we observe sample sizes <span class="math inline">\(n = (20, 20, 20)\)</span> within each group and successes <span class="math inline">\(y = (4, 10, 16)\)</span> and set our prior scale to <span class="math inline">\(\sigma=1\)</span>. From the observed data and given our priors, we might think it reasonable that our posterior evidence that treatment 2 is better than treatment 1 should be equivalent to our posterior evidence that treatment 3 is better than treatment 2, given that our observations for treatment 1 and 3 are equidistant from the treatment 2 response which is exactly on 0.5. However, our prior information would not lead us to this conclusion.</p>
+<pre class="stan"><code>data {
+  int&lt;lower=1&gt; N;
+  int&lt;lower=1&gt; P;
+  int&lt;lower=0&gt; n[N];
+  int&lt;lower=0&gt; y[N];
+  matrix[N, P] X;
+  vector[N] mu0;
+  matrix[P, P] sigma0;
+}
+parameters {
+  vector[P] beta;
+}
+model {
+  vector[N] eta;
+  eta = X * beta;
+  target += multi_normal_lpdf(beta | mu0, sigma0);
+  target += binomial_logit_lpmf(y | n, eta);
+}</code></pre>
+<pre class="r"><code>library(rstan)
+n &lt;- 2*rep(10, 3)
+y &lt;- 2*c(2, 5, 8)
+X1 &lt;- matrix(c(1, 1, 1, 0, 1, 0, 0, 0, 1), 3, 3)
+X2 &lt;- matrix(c(1, 0, 0, 0, 1, 0, 0, 0, 1), 3, 3)
+dat1 &lt;- list(N = 3, P = 3, X = X1, n = n, y = y, mu0 = rep(0, 3), sigma0 = diag(1, 3))
+dat2 &lt;- list(N = 3, P = 3, X = X2, n = n, y = y, mu0 = rep(0, 3), sigma0 = diag(1, 3))
+m_out1 &lt;- sampling(log_reg, data = dat1, refresh = 0, iter = 2e4)
+m_out2 &lt;- sampling(log_reg, data = dat2, refresh = 0, iter = 2e4)
+m_draws1 &lt;- as.matrix(m_out1)[, 1:3]
+m_draws2 &lt;- as.matrix(m_out2)[, 1:3]</code></pre>
+<p>Figure 1 presents our posterior densities of the treatment differences under the effect coding model and the cell means model.</p>
+<pre class="r"><code>nice_par(mfrow = c(2, 2))
+plot(density(m_draws1[, 2], n = 1e3), 
+     main = &quot;Effect coding&quot;, 
+     xlab = &quot;Estimated treatment difference&quot;,
+     xlim = c(-2, 4), ylim = c(0, 0.8))
+lines(density(m_draws1[, 3] - m_draws1[, 2], n = 1e3), col = &quot;red&quot;)
+legend(&quot;topleft&quot;, legend = c(&quot;2 vs 1&quot;, &quot;3 vs 2&quot;), lty = c(1, 1), 
+       col = c(1, &quot;red&quot;), bty = &#39;n&#39;)
+plot(density(m_draws2[, 2] - m_draws2[, 1], n = 1e3), 
+     main = &quot;Cell coding&quot;, 
+     xlab = &quot;Estimated treatment difference&quot;,
+     xlim = c(-2, 4), ylim = c(0, 0.8))
+lines(density(m_draws2[, 3] - m_draws2[, 2], n = 1e3), col = &quot;red&quot;)
+legend(&quot;topleft&quot;, legend = c(&quot;2 vs 1&quot;, &quot;3 vs 2&quot;), lty = c(1, 1), 
+       col = c(1, &quot;red&quot;), bty = &#39;n&#39;)
+
+plot(m_draws1[, 2], m_draws1[, 3] - m_draws1[, 2], 
+     col = rgb(0, 0, 0, alpha = 0.025), pch = 19,
+     xlab = &quot;2 vs 1&quot;, ylab = &quot;3 vs 2&quot;, xlim = c(-2, 4), ylim = c(-2, 4))
+plot(m_draws2[, 2] - m_draws2[, 1], m_draws2[, 3] - m_draws2[, 2], 
+     col = rgb(0, 0, 0, alpha = 0.025), pch = 19, 
+     xlab = &quot;2 vs 1&quot;, ylab = &quot;3 vs 2&quot;, xlim = c(-2, 4), ylim = c(-2, 4))</code></pre>
+<div class="figure"><span id="fig:unnamed-chunk-4"></span>
+<img src="https://jatotterdell.github.io/post/2019-06-04-prior-coding-effects_files/figure-html/unnamed-chunk-4-1.png" alt="Comparison between effect and cell coding priors on posterior densities." width="672" />
+<p class="caption">
+Figure 1: Comparison between effect and cell coding priors on posterior densities.
+</p>
+</div>
+<pre class="r"><code>cat(&quot;Effect coding\n&quot;)
+c(&quot;Prob(Trt 2 &gt; Trt 1)&quot; = mean(m_draws1[, 2] &gt; 0), 
+  &quot;Prob(Trt 3 &gt; Trt 2)&quot; = mean(m_draws1[, 3] - m_draws1[, 2] &gt; 0))
+cat(&quot;Cell coding\n&quot;)
+c(&quot;Prob(Trt 2 &gt; Trt 1)&quot; = mean(m_draws2[, 2] - m_draws2[, 1] &gt; 0),
+  &quot;Prob(Trt 3 &gt; Trt 2)&quot; = mean(m_draws2[, 3] - m_draws2[, 2] &gt; 0))</code></pre>
+<pre><code>Effect coding
+Prob(Trt 2 &gt; Trt 1) Prob(Trt 3 &gt; Trt 2) 
+           0.854175            0.965675 
+Cell coding
+Prob(Trt 2 &gt; Trt 1) Prob(Trt 3 &gt; Trt 2) 
+           0.967250            0.966525 </code></pre>
+<p>If we were making a threshold based decision dependent on a posterior probability of 0.95 then we might conclude sufficient evidence to say treatment 3 is better than 2, but not that treatment 2 is better than 1, even though the data provides the same evidence.</p>
+<p>What happened? Our prior specification on the effects parameterisation implies different prior scales on the treatment comparisons
+<span class="math display">\[
+\begin{aligned}
+\beta &amp;\sim N\left(0, \sigma^2 I_3\right) \\
+\implies 
+\begin{pmatrix}
+\beta_1 \\ \beta_2 - \beta_1
+\end{pmatrix} &amp;\sim N\left(0, \begin{pmatrix} \sigma^2 &amp; -\sigma^2 \\ -\sigma^2 &amp; 2\sigma^2 \end{pmatrix}\right).
+\end{aligned}
+\]</span>
+So, apriori, we have specified that we are more confident that the difference between treatment 2 and 1 is close to zero then we are that the difference between treatment 3 and 2 is close to zero. Therefore, the posterior density of the treatment difference between 2 and 1 is relatively less influenced by the data.</p>
+<p>Under the cell means prior we implicitly set equivalent scales.
+<span class="math display">\[
+\begin{aligned}
+\beta^C &amp;\sim N\left(0, \sigma^2 I_3\right) \\
+\implies 
+\begin{pmatrix}
+\beta^C_1 - \beta_0^C \\ \beta^C_2 - \beta^C_1
+\end{pmatrix} &amp;\sim N\left(0, \begin{pmatrix} 2\sigma^2 &amp; -\sigma^2 \\ -\sigma^2 &amp; 2\sigma^2 \end{pmatrix}\right).
+\end{aligned}
+\]</span></p>
+<p>Of course, we can get equivalent results between the two codings just by choosing appropriate priors given the parameterisation. The problem only occurs if we didn’t put any thought into how we parameterised the model or our priors and what it is we are trying to infer. Thus, our priors fail to reflect our true prior information or assumptions.</p>
+<p>In some instances we may want to set different scales on the comparisons, for example, if treatment 1 was a standard of care and treatment 2 and 3 were standard of care plus an additional new treatment, we might believe that apriori we are more informed about the comparisons between treatments 1 and 2 and treatments 1 and 3 than we are about comparisons between treatment 2 and 3 because the first two involve only one new treatment whereas the third involves both new treatments. We should then specify the prior scales appropriately to reflect this information.</p>
+<p>The takeaway is don’t specify a prior without thinking about what we want to infer and how our specified prior might influence those inferences.</p>
+<hr />
+<div id="references" class="section level1 unnumbered">
+<h1>References</h1>
+<div id="refs" class="references">
+<div id="ref-venables2018">
+<p>Venables, Bill. 2018. <em>CodingMatrices: Alternative Factor Coding Matrices for Linear Model Formulae</em>. <a href="https://CRAN.R-project.org/package=codingMatrices">https://CRAN.R-project.org/package=codingMatrices</a>.</p>
+</div>
+</div>
+</div>
+
+  </div>
+
+  <div id=links>
+    
+      <a class="basic-alignment left" href="https://jatotterdell.github.io/post/2019/05/25/logistic-regression-variational-approximation/">&laquo; Logistic Regression Variational Approximation - I</a>
+    
+    
+      <a class="basic-alignment left" href="https://jatotterdell.github.io/post/2019/09/02/bayesian-anova-parameterisation/">Bayesian ANOVA Parameterisation &raquo;</a>
+    
+  </div>
+</section>
+
+<section id="comments">
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+
+(function() {
+      
+      
+      if (window.location.hostname == "localhost")
+                return;
+
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      var disqus_shortname = '';
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</section>
+
+
+  
+  
+<script src="https://jatotterdell.github.io/js/math-code.js"></script>
+<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+<script src="//cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="//cdn.bootcss.com/highlight.js/9.12.0/languages/r.min.js"></script>
+
+ <script>
+hljs.configure({languages: []});
+hljs.initHighlightingOnLoad();
+</script>
+
+<script type="text/x-mathjax-config"> 
+    MathJax.Hub.Config({ 
+        "HTML-CSS": { scale: 95, linebreaks: { automatic: true } }, 
+        SVG: { linebreaks: { automatic:true } }, 
+        // displayAlign: "left" 
+        });
+</script>
+
+</body>
+</html>
+

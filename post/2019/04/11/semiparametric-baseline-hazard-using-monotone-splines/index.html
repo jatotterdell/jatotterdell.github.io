@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  
+
+  <link rel="icon" type="image/png" href="https://jatotterdell.github.io/favicon.png">
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/github-gist.css" rel="stylesheet" id="theme-stylesheet">
+  <script src="https://jatotterdell.github.io/js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+  <title>
+    
+    
+     Semiparametric baseline hazard using monotone splines 
+    
+  </title>
+  <link rel="canonical" href="https://jatotterdell.github.io/post/2019/04/11/semiparametric-baseline-hazard-using-monotone-splines/">
+
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/fonts.css" />
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/style.css" />
+
+  
+</head>
+
+<body>
+<section id=nav>
+  <h1><a href="https://jatotterdell.github.io/">James Totterdell</a></h1>
+  <ul>
+    
+    <li><a href="https://jatotterdell.github.io/">Home</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/about/">About</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/categories/">Categories</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/tags/">Tags</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/quotes/">Quotes</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/index.xml">RSS</a></li>
+    
+  </ul>
+</section>
+
+
+<section id=content>
+  <h1> Semiparametric baseline hazard using monotone splines </h1>
+
+  <div id=sub-header>
+    James Totterdell · 2019-04-11
+  </div>
+
+  <div class="entry-content">
+    
+
+
+<div id="background" class="section level1">
+<h1>Background</h1>
+<p>I had been following a conversation on the <a href="https://discourse.mc-stan.org/t/survival-models-in-rstanarm/3998">Stan discourse</a> about implementing flexible survival models in Stan. A common thread of the discussions was the use of monotone splines (M-splines) and their corresponding integrated splines (I-splines) as a semi-parametric model for the baseline cumulative hazard (or baseline log-cumulative hazard).</p>
+<p>I have previously encountered the paper by <span class="citation">(Ramsay and others <a href="#ref-ramsay1988" role="doc-biblioref">1988</a>)</span> whilst reading about spline extensions to the self-controlled case series (SCCS) method, but did not have much time to get into the details.</p>
+<p>It has been a long time since I took my numerical analysis course, and I wanted to dig into the details of splines a bit more as I have usually found the definitions a bit nebulous.</p>
+<p>What follows are a set of rough (hopefully not too erroneous) notes working through some sections of <span class="citation">De Boor (<a href="#ref-deboor1978" role="doc-biblioref">1978</a>)</span> as I think about some of the spline concepts. My main goal being a learning exercise and implementation of my own B-spline, M-spline, and I-spline functions in Stan for modelling the baseline hazard.</p>
+</div>
+<div id="splines" class="section level1">
+<h1>Splines</h1>
+<div id="piecewise-polynomials" class="section level2">
+<h2>Piecewise Polynomials</h2>
+
+<div class="definition">
+<span id="def:poly" class="definition"><strong>Definition 1  (Polynomial Functions)  </strong></span>A polynomial of order <span class="math inline">\(k\)</span> (degree <span class="math inline">\(&lt;k\)</span>) is
+<span class="math display">\[
+p(x) = a_1 + a_2 x + \cdots + a_k x^{k-1} = \sum_{j=1}^k a_j cx^{j-1}.
+\]</span>
+The set of all polynomials of order <span class="math inline">\(k\)</span> is denoted equivalently by <span class="math inline">\(\Pi_{&lt;k}=\Pi_{\leq k-1}=\Pi_{k-1}\)</span>.
+</div>
+
+
+<div class="definition">
+<p><span id="def:pp" class="definition"><strong>Definition 2  (Piecewise Polynomial Functions)  </strong></span>Given a strictly increasing sequence <span class="math inline">\(\{\xi_i\}_1^{l+1}\)</span> (breaks or breakpoints) and sequence of polynomials <span class="math inline">\(\{P_i\}_1^l\)</span> each of order <span class="math inline">\(k\)</span> (i.e <span class="math inline">\(\in \Pi_{&lt;k}\)</span>), the piecewise polynomial function of order <span class="math inline">\(k\)</span> is defined by
+<span class="math display">\[
+f(x) \overset{\Delta}{=} P_i(x) \quad\text{if } \xi_i &lt; x &lt; \xi_{i+1};\quad i=1,...,l
+\]</span>
+where we may extend (extrapolate) this <em>basic interval</em> beyond the boundaries by defining
+<span class="math display">\[
+f(x) \overset{\Delta}{=} \begin{cases}
+P_1(x)&amp;\quad\text{if } x\leq \xi_1 \\
+P_l(x)&amp;\quad\text{if } x\geq \xi_{l+1}.
+\end{cases}
+\]</span>
+At the <em>interior breaks</em> <span class="math inline">\(\{\xi_i\}_2^l\)</span>, the function <span class="math inline">\(f\)</span> is so far undefined but in a sense has two values: <span class="math inline">\(f(\xi_i^-)=P_{i-1}(\xi_i)\)</span> and <span class="math inline">\(f(\xi_i^+)=P_i(\xi_i)\)</span>. Arbitrarily we choose to define <span class="math inline">\(f\)</span> continuous from the right so that <span class="math inline">\(f(\xi_i)\overset{\Delta}{=}f(\xi_i^+)\)</span> for <span class="math inline">\(i=2,...,l\)</span>.</p>
+The collection of all pp functions of order <span class="math inline">\(k\)</span> with break sequence <span class="math inline">\(\xi=\{\xi_i\}_1^{l+1}\)</span> is denoted by <span class="math inline">\(\Pi_{&lt;k,\xi}\)</span>. This is a linear space.
+</div>
+
+<p>Often, our aim is to use some <span class="math inline">\(f\in\Pi_{&lt;k,\xi}\)</span> to approximate another function <span class="math inline">\(g\)</span> according to some set of conditions determined by known information about <span class="math inline">\(g\)</span>. Often, these conditions may relate to smoothness, relating to continuity conditions of the approximating function <span class="math inline">\(f\)</span>.</p>
+<p>De Boor defines the following subspace of <span class="math inline">\(\Pi_{&lt;k,\xi}\)</span>.</p>
+
+<div class="definition">
+<p><span id="def:sub" class="definition"><strong>Definition 3  (Piecewise Polynomial Subspace.)  </strong></span>Typical conditions requre that <span class="math inline">\(f\in\Pi_{&lt;k,\xi}\)</span> have a certain number of continuous derivatives. These conditions are
+<span class="math display">\[
+\begin{aligned}
+\text{jump}_{\xi}f &amp;= f(\xi^+)-f(\xi^-)\\
+\text{jump}_{\xi_i}D^{j-1}f &amp;= 0 \quad\text{for }j=1,...,\nu_i\text{ and }i=2,...l
+\end{aligned}
+\]</span>
+for some nonnegative integers <span class="math inline">\(\nu=\{\nu_i\}_2^l\)</span> where <span class="math inline">\(\nu_i\)</span> counts the number of continuity conditions at <span class="math inline">\(\xi_i\)</span>.</p>
+The subset of all <span class="math inline">\(f\in\Pi_{&lt;k,\xi}\)</span> satisfying these conditions is denoted by the space <span class="math inline">\(\Pi_{&lt;k,\xi,\nu}\)</span> which is a linear subspace of <span class="math inline">\(\Pi_{&lt;k,\xi}\)</span>.
+</div>
+
+<p>So, <span class="math inline">\(v_i=0\)</span> implies that there are no continuity conditions at the breakpoint <span class="math inline">\(\xi_i\)</span>, and otherwise <span class="math inline">\(v_i\)</span> gives the level of continuity.</p>
+<p>For the purposes of computation we need a basis for this new space. That is, we want a sequence of functions <span class="math inline">\(\varphi_1,\varphi_2,...\in\Pi_{&lt;k,\xi,\nu}\)</span> such that any element <span class="math inline">\(f\)</span> can be written uniquely as
+<span class="math display">\[
+f(x) \overset{\Delta}{=} \sum_j \alpha_j\varphi_j(x).
+\]</span></p>
+
+<div class="definition">
+<p><span id="def:tpb" class="definition"><strong>Definition 4  (Truncated Power Basis)  </strong></span>Define the <em>truncated power function</em> by
+<span class="math display">\[
+\begin{aligned}
+(x - t)_+ &amp;\overset{\Delta}{=} \max\{x-t,0\} \\
+(x)_+^r  &amp;\overset{\Delta}{=} (x_+)^r,\quad r=0,1,2,... \\
+(x)_+^0 &amp;= 0 \quad x&lt;0.
+\end{aligned}
+\]</span>
+then <span class="math inline">\(f(x) = (x-\xi)_+^r\in\Pi_{&lt;r1,\xi}\)</span> and <span class="math inline">\(Df(x) = r(x - \xi)_+^{r-1}\)</span> so that <span class="math inline">\(f\)</span> has <span class="math inline">\(r-1\)</span> continuous derivatives with a jump of magnitude <span class="math inline">\(r!\)</span> at <span class="math inline">\(\xi\)</span>.</p>
+<p>Additionally, define
+<span class="math display">\[
+\begin{aligned}
+\lambda_{ij}f &amp;\overset{\Delta}{=} \begin{cases}
+  D^j f &amp; i=1, \\
+  \text{jump}_{\xi_i}D^j f&amp; i=2,...,l
+\end{cases} \\
+\varphi_{ij}(x) &amp;\overset{\Delta}{=} \begin{cases}
+  (x - \xi_1)^j/j! &amp;i=1, \\
+  (x - \xi_i)_+^j/j! &amp;i=2,...,l,
+\end{cases}
+\end{aligned}
+\]</span>
+for <span class="math inline">\(j=0,...,k-1\)</span>, noting that <span class="math inline">\(\phi_{ij}\in\Pi_{&lt;k,\xi}\)</span>.</p>
+The collection of <span class="math inline">\(\{\varphi_{ij}\}\)</span> is a basis for <span class="math inline">\(\Pi_{&lt;k,\xi}\)</span>.
+</div>
+
+<p>Any <span class="math inline">\(f\in \Pi_{&lt;k,\xi}\)</span> can be written
+<span class="math display">\[
+\begin{aligned}
+f &amp;= \sum_{ij} (\lambda_{ij} f )\varphi_{ij} \\
+f(x) &amp;= \sum_{j &lt; k} f^{(j)(\xi_1)}(x - \xi_1)^j/j! + \sum_{i=2}^l\sum_{j&lt;k} \text{jump}_{\xi_i} D^j f(x - \xi_i)_+^j/j!.
+\end{aligned}
+\]</span>
+THe jumps appear as coefficients and enoforcement of the specified constraints
+<span class="math display">\[
+\text{jump}_{\xi_i}D^{j-1}f = 0 \quad\text{for }j=1,...,\nu_i\text{ and }i=2,...l,
+\]</span>
+are made by simply restricting to functions where the coefficients are zero.</p>
+<p>Then the sequence <span class="math inline">\(\varphi_{ij}, i=2,...,l,j=\nu_i,...,k-1\)</span> is a basis for <span class="math inline">\(\Pi_{&lt;k,\xi,\nu}\)</span> taking <span class="math inline">\(v_1=0\)</span> so that
+<span class="math display">\[
+\Pi_{&lt;k,\xi,\nu} \ni f =\sum_{i=1}^l \sum_{j=\nu_i}^{k-1} \alpha_{ij}\varphi_{ij}.
+\]</span>
+For example, suppose <span class="math inline">\(f\in\Pi_{&lt;2,\xi,\nu}\)</span> where <span class="math inline">\(\nu_2=\cdots=\nu_l=1\)</span> and as previously stated, <span class="math inline">\(v_1=0\)</span> by design. Then
+<span class="math display">\[
+f(x) = \alpha_{10} + \alpha_{11}(x - \xi_1) + \sum_{i=1}^l \alpha_{i1}(x - \xi_i)_+
+\]</span>
+for some <span class="math inline">\(\alpha\)</span>.</p>
+<pre class="r"><code>tpf &lt;- function(x, r) {
+  out &lt;- pmax(x, 0)^r
+  if(r == 0)
+    out[x &lt;= 0] &lt;- 0
+  return(out)
+}</code></pre>
+<div class="figure"><span id="fig:unnamed-chunk-2"></span>
+<img src="https://jatotterdell.github.io/post/2019-04-11-semiparametric-baseline-hazard-using-monotone-splines_files/figure-html/unnamed-chunk-2-1.png" alt="Example truncated power functions." width="672" />
+<p class="caption">
+Figure 1: Example truncated power functions.
+</p>
+</div>
+<p>The TPB has stability issues as a basis. Therefore, alternatives are preferred. The <span class="math inline">\(k\)</span>th-order B-spline basis can be defined as scaled <span class="math inline">\(k\)</span>th divided differences of the TPB and any <span class="math inline">\(\Pi_{&lt;k,\xi,\nu}\)</span> has a B-spline basis.</p>
+<p>For a function <span class="math inline">\(g\)</span> and knot sequence <span class="math inline">\(\tau\)</span>, the <span class="math inline">\(k\)</span>th divided difference of <span class="math inline">\(g\)</span> is
+<span class="math display">\[
+[\tau_0,...,\tau_k]g =
+\begin{cases}
+ \frac{g^{(k)}(\tau_0)}{k!} &amp;\text{when }\tau_0=\tau_1=\cdots=\tau_k,g\in C^k \\
+ \frac{[\tau_0,...,\tau_{r-1},\tau_{r+1},...,\tau_k]g-[\tau_0,...,\tau_{s-1},\tau_{s+1},...,\tau_k]g}{t_s - t_r} &amp;\text{where } t_s\text{ and }t_r\text{ are any distinct knots in the sequence.}
+\end{cases}
+\]</span></p>
+<p>Let <span class="math inline">\(\tau = (\tau_j)\)</span> be a nondecreasing sequence. The <span class="math inline">\(j\)</span>th normalised B-spline of order <span class="math inline">\(k\)</span> for the knot sequence <span class="math inline">\(\tau\)</span>, denoted <span class="math inline">\(B_{j,k,\tau}\)</span> is
+<span class="math display">\[
+\begin{aligned}
+B_{j,k,\tau}(x) &amp;\overset{\Delta}{=} (\tau_{j+k} - \tau_j)[\tau_j,...,\tau_{j+k}](\cdot - x)_+^{k-1} \\
+&amp;= [\tau_{j+1},...,\tau_{j+k}](\cdot - x)_+^{k-1} - [\tau_j,...,\tau_{j+k-1}](\cdot - x)_+^{k-1}
+\end{aligned}
+\]</span>
+where the <span class="math inline">\(k\)</span>th divided difference of <span class="math inline">\(g(\cdot)=(\cdot - x)_+^{k-1}\)</span> is to be considered as a function of the knot for fixed <span class="math inline">\(x\)</span>. From the definition, if <span class="math inline">\(x\notin [\tau_j, \tau_{j+k})\)</span> then <span class="math inline">\(B_{j,k,\tau}=0\)</span>.</p>
+<p>Let <span class="math inline">\(\tau\)</span> be a knot sequence. Then we have
+<span class="math display">\[
+B_{j1}(x) = \begin{cases} 1 &amp;\text{if } x\in [\tau_j, \tau_{j+1}) \\
+0 &amp; \text{if } x\notin [\tau_j, \tau_{j+1})
+\end{cases}
+\]</span>
+the B-spline of order 1. From this, the B-spline of order <span class="math inline">\(k&gt;1\)</span> on <span class="math inline">\([\tau_j, \tau_{j+k})\)</span> are given by
+<span class="math display">\[
+\begin{aligned}
+B_{j,k}(x) &amp;= \omega_{j,k}B_{j,k-1}(x) + (1 - \omega_{j+1,k})B_{j+1,k-1}(x) \\
+&amp;= \frac{x - \tau_j}{\tau_{j+k-1} - \tau_j}B_{j,k-1}(x) + \frac{\tau_{j+k} - x}{\tau_{j+k} - \tau_{j+1}}B_{j+1,k-1}(x) \\
+\omega_{j,k}(x) &amp;= \frac{x-\tau_j}{\tau_{j+k-1} - \tau_j}
+\end{aligned}
+\]</span>
+which depends only on the <span class="math inline">\(k+1\)</span> knots <span class="math inline">\(\tau_j,...,\tau_{j+k}\)</span>.</p>
+<p>A <em>spline</em> function of order <span class="math inline">\(k\)</span> with knot sequence <span class="math inline">\(\tau\)</span> is any linear combination of B-splines of order <span class="math inline">\(k\)</span>
+<span class="math display">\[
+\mathcal{S}_{k,\tau} \overset{\Delta}{=} \left\{\sum_i \alpha_i B_{i,k,\tau}|\alpha_i\in\mathbb R, \forall i\right\}.
+\]</span>
+Given B-splines are in the set <span class="math inline">\(\Pi_{&lt;k,\tau}\)</span> we have <span class="math inline">\(\mathcal{S}_{k,\tau} \subseteq \Pi_{&lt;k,\tau}\)</span>, but we also have <span class="math inline">\(\mathcal{S}_{k,\tau} = \Pi_{&lt;k,\xi,\nu}\)</span> for some <span class="math inline">\(\tau\)</span> given <span class="math inline">\(\xi\)</span> and <span class="math inline">\(\nu\)</span>. Additionally, <span class="math inline">\(\Pi_{&lt;k}\subseteq \mathcal{S}_{k,\tau}\)</span>, that is, the set of splines contains all polynomials of order <span class="math inline">\(k\)</span>.</p>
+<p>Curry and Schoenberg show that, given strictly increase break sequence <span class="math inline">\(\xi = (\xi_i)_1^{l+1}\)</span>, and non-negative integers <span class="math inline">\(\nu = (\nu_i)_2^l\)</span> with <span class="math inline">\(\nu_i \leq k\)</span>, set
+<span class="math display">\[
+n \overset{\Delta}{=} k + \sum_{i=2}^l (k - \nu_i) = kl - \sum_{i=2}^l \nu_i = \dim\Pi_{&lt;k,\xi,\nu}
+\]</span>
+and let <span class="math inline">\(\tau = (\tau_i)_1^{n+k}\)</span> be non-decreasing sequence constructed from <span class="math inline">\(xi\)</span> and <span class="math inline">\(\nu\)</span> by:</p>
+<ul>
+<li>for <span class="math inline">\(i=2,...,l\)</span>, <span class="math inline">\(\xi_i\)</span> occurs exactly <span class="math inline">\(k-\nu_i\)</span> times,</li>
+<li><span class="math inline">\(\tau_1\leq \tau_2 \leq \cdots \leq \tau_k \leq \xi_1\)</span> and <span class="math inline">\(\xi_{l+1}\leq \tau_{n+1} \leq \tau_{n+1} \leq \cdots \leq \tau_{n+k}\)</span>.
+Then the sequence <span class="math inline">\(B_1,...,B_n\)</span> of B-splines of order <span class="math inline">\(k\)</span> for knot sequence <span class="math inline">\(\tau\)</span> is a basis for <span class="math inline">\(\Pi_{&lt;k,\xi,\nu}\)</span> as functions on the <em>basic interval</em> <span class="math inline">\(I_{k,\tau} = [\tau_k,...,\tau_{n+1}]\)</span>. This implies
+<span class="math display">\[
+\mathcal{S}_{k,\tau} = \Pi_{&lt;k,\xi,nu} \text{ on } I_{k,\tau}.
+\]</span>
+Thus, we have a recipe for constructing a B-spline basis for a piecewise polynomial space <span class="math inline">\(\Pi_{&lt;k,\xi,\nu}\)</span> by setting a certain knot sequence <span class="math inline">\(\tau\)</span>.</li>
+</ul>
+<p>Fewer knots at a break <span class="math inline">\(\xi\)</span> implies more continuity. The number of continuity conditions at a break plus the number of knots at the break is equal to the order of the spline. Additionally, <span class="math inline">\(k\)</span>-knots at a break implies no continuity, and <span class="math inline">\(0\)</span>-knots at a break implies <span class="math inline">\(k\)</span> continuity conditions.</p>
+</div>
+</div>
+<div id="summary" class="section level1">
+<h1>Summary</h1>
+<div id="truncated-power-basis" class="section level2">
+<h2>Truncated Power Basis</h2>
+</div>
+<div id="b-spline-basis" class="section level2">
+<h2>B-spline basis</h2>
+</div>
+<div id="m-spline-basis" class="section level2">
+<h2>M-spline basis</h2>
+</div>
+<div id="i-spline-basis" class="section level2">
+<h2>I-spline basis</h2>
+</div>
+</div>
+<div id="monotone-splines-in-proportional-hazards-model" class="section level1">
+<h1>Monotone Splines in Proportional Hazards Model</h1>
+<pre class="r"><code>library(splines)
+library(splines2)
+
+knot_sequence &lt;- function(breaks, continuity, order) {
+  stopifnot(length(breaks) == length(continuity) + 2)
+  stopifnot(all(continuity &lt;= order))
+  l &lt;- length(breaks)
+  
+  n &lt;- order + sum(order - continuity)
+  c(rep(breaks[1], order), 
+    rep(breaks[2:(l-1)], times = order - continuity), 
+    rep(breaks[l], order))
+} 
+
+build_b_spline &lt;- function(x, knots, ind, order) {
+    if(order == 1) {
+      for (i in 1:size(t))
+      b_spline[i] = (knots[ind] &lt;= t[i]) &amp;&amp; (t[i] &lt; knots[ind + 1]) 
+    } else {
+      
+    }
+}</code></pre>
+<pre class="stan"><code>functions {
+  // B-spline construction (http://mc-stan.org/users/documentation/case-studies/splines_in_stan.html)
+  vector build_b_spline(real[] t, real[] knots, int ind, int order);
+    // INPUTS:
+    //    t:          the points at which the b_spline is calculated
+    //    ext_knots:  the set of extended knots
+    //    ind:        the index of the b_spline
+    //    order:      the order of the b-spline
+  vector build_b_spline(real[] t, real[] knots, int ind, int order) {
+    vector[size(t)] b_spline;
+    vector[size(t)] w1 = rep_vector(0, size(t));
+    vector[size(t)] w2 = rep_vector(0, size(t));
+    if (order == 1)
+      for (i in 1:size(t)) // B-splines of order 1 are piece-wise constant
+        b_spline[i] = (knots[ind] &lt;= t[i]) &amp;&amp; (t[i] &lt; knots[ind + 1]);
+    else {
+      if (knots[ind] != knots[ind + order - 1])
+        w1 = (to_vector(t) - rep_vector(knots[ind], size(t))) /
+             (knots[ind + order - 1] - knots[ind]);
+      if (knots[ind+1] != knots[ind+order])
+        w2 = 1 - (to_vector(t) - rep_vector(knots[ind+1], size(t))) /
+                 (knots[ind+order] - knots[ind+1]);
+      // Calculating the B-spline recursively as linear interpolation of two lower-order splines
+      b_spline = w1 .* build_b_spline(t, knots, ind, order - 1) +
+                 w2 .* build_b_spline(t, knots, ind + 1, order - 1);
+      if (ind == size(knots) - order) {
+        b_spline[size(t)] = 1.0;
+    }
+    }
+    return b_spline;
+  }
+  
+  // M-spline construction
+  vector build_m_spline(real[] t, real[] knots, int ind, int order);
+    // INPUTS
+    //  t: points at which to calculate M-spline
+    //  ext_knots: set of extended knots
+    //  ind: index of M spline
+    //  order: order of M spline
+  vector build_m_spline(real[] t, real[] knots, int ind, int order) {
+    vector[size(t)] b_spline;
+    vector[size(t)] m_spline;
+    b_spline = build_b_spline(t, knots, ind, order);
+    for (i in 1:size(t)) {
+      m_spline[i] = b_spline[i]*order/(knots[ind + order] - knots[ind]);
+    }
+    return m_spline;
+  }
+  
+  // I-spline construction
+  matrix b_spline_to_i_spline(matrix B);
+    // INPUTS
+    //  B: a bSpline of degree k + 1
+    //     will produce an iSpline of degree k
+  matrix b_spline_to_i_spline(matrix B) {
+    int dim[2];
+    row_vector[dims(B)[2]] rev_b;
+    matrix[dims(B)[1], dims(B)[2]] i_spline;
+    for(i in 1:dims(B)[1]) {
+      i_spline[i] = to_row_vector(rep_vector(0, dims(B)[2]));
+      // need to reverse, cumulative sum, then reverse again.
+      // better way to do it? reverse(x) function?
+      for(j in 1:dims(B)[2]) {
+        rev_b[j] = B[i][dims(B)[2] - j + 1];
+      }
+      rev_b = cumulative_sum(rev_b);
+      for(j in 1:dims(B)[2]) {
+        i_spline[i, j] = rev_b[dims(B)[2] - j + 1]; 
+      }
+    }
+    return i_spline;
+  }
+}</code></pre>
+</div>
+<div id="examples" class="section level1">
+<h1>Examples</h1>
+<pre class="r"><code>library(simsurv)
+covs &lt;- data.frame(id = 1:1000, trt = factor(sample.int(3, 1000, replace = T)))
+X &lt;- data.frame(cbind(covs, model.matrix( ~ trt, data = covs)[, -1]))
+sim &lt;- simsurv(lambdas = 0.2, gammas = 1.5, betas = c(trt2 = 0),
+               x = X, tde = c(trt2 = 0.5), tdefunction = function(x) (x &gt; 2))
+plot(ecdf(sim$eventtime[X$trt2 == 0]))
+lines(ecdf(sim$eventtime[X$trt2 == 1]), col = &quot;red&quot;)</code></pre>
+<p><img src="https://jatotterdell.github.io/post/2019-04-11-semiparametric-baseline-hazard-using-monotone-splines_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<hr />
+<div id="references" class="section level2 unnumbered">
+<h2>References</h2>
+<div id="refs" class="references">
+<div id="ref-deboor1978">
+<p>De Boor, Carl. 1978. <em>A Practical Guide to Splines</em>. Vol. 27. springer-verlag New York.</p>
+</div>
+<div id="ref-ramsay1988">
+<p>Ramsay, James O, and others. 1988. “Monotone Regression Splines in Action.” <em>Statistical Science</em> 3 (4): 425–41.</p>
+</div>
+</div>
+</div>
+</div>
+
+  </div>
+
+  <div id=links>
+    
+      <a class="basic-alignment left" href="https://jatotterdell.github.io/post/2019/03/28/variational-inference-for-exponential-proportional-hazards-model/">&laquo; Variational Inference for Exponential Proportional Hazards Model</a>
+    
+    
+      <a class="basic-alignment left" href="https://jatotterdell.github.io/post/2019/04/25/ordinal-models-likert-scale-data/">Ordinal Models Likert Scale Data &raquo;</a>
+    
+  </div>
+</section>
+
+<section id="comments">
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+
+(function() {
+      
+      
+      if (window.location.hostname == "localhost")
+                return;
+
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      var disqus_shortname = '';
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</section>
+
+
+  
+  
+<script src="https://jatotterdell.github.io/js/math-code.js"></script>
+<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+<script src="//cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="//cdn.bootcss.com/highlight.js/9.12.0/languages/r.min.js"></script>
+
+ <script>
+hljs.configure({languages: []});
+hljs.initHighlightingOnLoad();
+</script>
+
+<script type="text/x-mathjax-config"> 
+    MathJax.Hub.Config({ 
+        "HTML-CSS": { scale: 95, linebreaks: { automatic: true } }, 
+        SVG: { linebreaks: { automatic:true } }, 
+        // displayAlign: "left" 
+        });
+</script>
+
+</body>
+</html>
+

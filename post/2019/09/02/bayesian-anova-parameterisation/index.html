@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  
+
+  <link rel="icon" type="image/png" href="https://jatotterdell.github.io/favicon.png">
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/github-gist.css" rel="stylesheet" id="theme-stylesheet">
+  <script src="https://jatotterdell.github.io/js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+  <title>
+    
+    
+     Bayesian ANOVA Parameterisation 
+    
+  </title>
+  <link rel="canonical" href="https://jatotterdell.github.io/post/2019/09/02/bayesian-anova-parameterisation/">
+
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/fonts.css" />
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/style.css" />
+
+  
+</head>
+
+<body>
+<section id=nav>
+  <h1><a href="https://jatotterdell.github.io/">James Totterdell</a></h1>
+  <ul>
+    
+    <li><a href="https://jatotterdell.github.io/">Home</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/about/">About</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/categories/">Categories</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/tags/">Tags</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/quotes/">Quotes</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/index.xml">RSS</a></li>
+    
+  </ul>
+</section>
+
+
+<section id=content>
+  <h1> Bayesian ANOVA Parameterisation </h1>
+
+  <div id=sub-header>
+    James Totterdell · 2019-09-02
+  </div>
+
+  <div class="entry-content">
+    
+
+
+<div id="background" class="section level1">
+<h1>Background</h1>
+<p>ANOVA methods are essentially about “batching” related model parameters to aid interpretability of the results <span class="citation">(e.g. Gelman <a href="#ref-gelman2005" role="doc-biblioref">2005</a>)</span>. This batching is usually achieved by enforcing some kind of constraint on the parameters within the model. In classical inference, such constraints can be enforced in a number of ways and, to some extent, immaterially affect the inference due to the arbitrariness of the <a href="https://jatotterdell.github.io/post/2019/06/04/prior-coding-effects/">design matrix</a>. However, in Bayesian inference, parameterisation determines our priors which influence our inferences. Therefore, whilst in classicla ANOVA, the method of enforcing the usual sum to zero constraint (e.g. setting <span class="math inline">\(\alpha_1=0\)</span> or <span class="math inline">\(\alpha_a = -\sum_{i=1}^{a-1}\alpha_i\)</span>) doesn’t really matter apart from interpretation, but in Bayesian inference a “fair” constraint is required.</p>
+<p>To work through a sufficiently complex example (for more details see, for example <span class="citation">(Rouder et al. <a href="#ref-rouder2012" role="doc-biblioref">2012</a>)</span>, or for a more rigorous analysis <span class="citation">(Gu <a href="#ref-gu2013" role="doc-biblioref">2013</a>)</span>), consider a two-way factorial design with linear predictor
+<span class="math display">\[
+\begin{aligned}
+\eta &amp;= 1^\top\mu + X_\alpha\alpha + X_\beta\beta + X_\gamma\gamma \\
+&amp;= X\theta
+\end{aligned}
+\]</span>
+where the basic structure of the design matrices are as follows, repeated as necessary for the number of replicates
+<span class="math display">\[
+\begin{aligned}
+X_\alpha &amp;= I_a\otimes 1_b \\
+X_\beta &amp;= 1_a \otimes I_b \\
+X_\gamma &amp;= I_{a\times b}.
+\end{aligned}
+\]</span></p>
+<pre class="r"><code>a &lt;- 4
+b &lt;- 3
+g &lt;- a*b
+Xa &lt;- kronecker(diag(1, a), rep(1, b))
+Xb &lt;- kronecker(rep(1, a), diag(1, b))
+Xg &lt;- diag(1, g)
+X &lt;- cbind(1, Xa, Xb, Xg)
+print(X)</code></pre>
+<pre><code>      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10] [,11] [,12] [,13]
+ [1,]    1    1    0    0    0    1    0    0    1     0     0     0     0
+ [2,]    1    1    0    0    0    0    1    0    0     1     0     0     0
+ [3,]    1    1    0    0    0    0    0    1    0     0     1     0     0
+ [4,]    1    0    1    0    0    1    0    0    0     0     0     1     0
+ [5,]    1    0    1    0    0    0    1    0    0     0     0     0     1
+ [6,]    1    0    1    0    0    0    0    1    0     0     0     0     0
+ [7,]    1    0    0    1    0    1    0    0    0     0     0     0     0
+ [8,]    1    0    0    1    0    0    1    0    0     0     0     0     0
+ [9,]    1    0    0    1    0    0    0    1    0     0     0     0     0
+[10,]    1    0    0    0    1    1    0    0    0     0     0     0     0
+[11,]    1    0    0    0    1    0    1    0    0     0     0     0     0
+[12,]    1    0    0    0    1    0    0    1    0     0     0     0     0
+      [,14] [,15] [,16] [,17] [,18] [,19] [,20]
+ [1,]     0     0     0     0     0     0     0
+ [2,]     0     0     0     0     0     0     0
+ [3,]     0     0     0     0     0     0     0
+ [4,]     0     0     0     0     0     0     0
+ [5,]     0     0     0     0     0     0     0
+ [6,]     1     0     0     0     0     0     0
+ [7,]     0     1     0     0     0     0     0
+ [8,]     0     0     1     0     0     0     0
+ [9,]     0     0     0     1     0     0     0
+[10,]     0     0     0     0     1     0     0
+[11,]     0     0     0     0     0     1     0
+[12,]     0     0     0     0     0     0     1</code></pre>
+<p>For interpretability, we would constrain the design so the parameters represent deflections about the overall mean <span class="math inline">\(\mu\)</span>. This is achieved by specifying a sum to zero constraint.
+<span class="math display">\[
+\begin{aligned}
+\sum_{j=1}^a \alpha_j &amp;= 0 \\
+\sum_{j=1}^b \beta_j &amp;= 0 \\
+\sum_{k=1}^{a} \text{vec}^{-1}(\gamma)_{jk} = \sum_{j=1}^b \text{vec}^{-1}(\gamma)_{jk} &amp;=0.
+\end{aligned}
+\]</span>
+If we were just to enforce <span class="math inline">\(\alpha_1=0\)</span>, say, then any <span class="math inline">\(\eta\)</span> involving <span class="math inline">\(\alpha_1\)</span> is a priori less variable than those involving the other <span class="math inline">\(\alpha\)</span>, similarly if we used the <span class="math inline">\(\alpha_a = -\sum_{i=1}^{a-1}\alpha_i\)</span> constraint than any <span class="math inline">\(\eta\)</span> involving <span class="math inline">\(\alpha_a\)</span> is a priori more variable than those involving the other <span class="math inline">\(\alpha\)</span>. If comparing treatments say, this is disadvantaging/advantaging some comparisons over others.</p>
+<p>Assuming we start from unconstrained variables, for example <span class="math inline">\(\alpha^\prime\sim N(0,\sigma^2_aI_a)\)</span>, then to fairly enforce the constraint we are specifying a transformation <span class="math inline">\(\alpha=\alpha^\prime - \bar\alpha^\prime=0\)</span> which implies <span class="math inline">\(\alpha\sim N(0,\sigma_a^2(I_a - a^{-1}J_a))\)</span>, say. In general, the above constraints are equivalent to specifying correlated priors as follows
+<span class="math display">\[
+\begin{aligned}
+S_a &amp;= I_a - a^{-1}J_a \\
+S_b &amp;= I_b - b^{-1}J_b \\
+\alpha &amp;\sim N(0, \Sigma_a = \sigma_a^2S_a) \\
+\beta &amp;\sim N(0, \Sigma_b = \sigma_b^2S_b) \\
+\gamma &amp;\sim N(0, \Sigma_{ab} = \sigma_g^2(S_a\otimes S_b)) \\
+\end{aligned}
+\]</span>
+which directly enforce the constraints posed previously and where we have used the fact that <span class="math inline">\(S_a S_a = S_a\)</span>, etc.</p>
+<pre class="r"><code>inv_vec &lt;- function(A) matrix(A, a, b, byrow = T)
+Sa &lt;- diag(1, a) - 1/a
+Sb &lt;- diag(1, b) - 1/b
+Sg &lt;- kronecker(Sa, Sb)
+R &lt;- mvtnorm::rmvnorm(1, sigma = Sg)
+mR &lt;- inv_vec(R)
+c(round(colSums(mR), 5), round(rowSums(mR), 5))</code></pre>
+<pre><code>[1] 0 0 0 0 0 0 0</code></pre>
+<p>This model is still unidentifiable as the design matrix <span class="math inline">\(X\)</span> has rank 12, but the model involves 20 parameters.</p>
+<p>In the Bayesian framework, unidentifiability doesn’t necessarily pose a problem as we can still perform inference via any usual method whether it be approximations or sampling. In fact, we can just fit the unidentifiable model and then apply the appropriate constraints after the fact. However, we will find that sampling is inefficient due to the unidentifiability of the parameters. Therefore, we ideally re-parameterise first to enforce identifiability and improve sampling efficiency, and then can back transform after sampling is completed.</p>
+<p>To apply the constraints after the fact, we wish to enforce the sum-to-zeros given above by subtracting the relevant means
+<span class="math display">\[
+\begin{aligned}
+\alpha_j^\star &amp;= \alpha_j - \bar\alpha,\quad j=1,...,a \\
+\beta_j^\star &amp;= \beta_j - \bar\beta,\quad j=1,...,b \\
+\gamma_{jk}^\star &amp;= \gamma_{jk} - \bar\gamma_{j+} - \bar\gamma_{+k} + \bar\gamma,\quad j=1,...,a; k=1,...,b \\
+\mu^\star &amp;= \mu + \bar\alpha + \bar\beta + \bar\gamma.
+\end{aligned}
+\]</span>
+There may be an easier way, but to enforce this constraint we can use the following matrices
+<span class="math display">\[
+\begin{aligned}
+C_\mu &amp;= \begin{bmatrix} a^{-1}1_a^\top &amp; b^{-1}1_b^\top &amp; (ab)^{-1}1_{ab}^\top\end{bmatrix} \\
+C_\alpha &amp;= \begin{bmatrix} S_a &amp; 0_{a\times b} &amp; (b^{-1}I_a - (ab)^{-1}J_a)\otimes1_b^\top \end{bmatrix} \\
+C_\beta &amp;= \begin{bmatrix} 0_{b\times a} &amp; S_b &amp; 1_a^\top \otimes (a^{-1}I_b - (ab)^{-1}J_b)\end{bmatrix} \\
+C_\gamma &amp;= \begin{bmatrix} 0_{ab\times (a+b)} &amp; S_a\otimes S_b\end{bmatrix}\\
+C &amp;=  \begin{bmatrix} 1 &amp; C_\mu \\ 0 &amp; C_\alpha \\ 0 &amp; C_\beta \\ 0 &amp; C_\gamma \end{bmatrix}
+\end{aligned}
+\]</span></p>
+<pre class="r"><code>Cm &lt;- rbind(c(rep(1 / a, a), rep(1 / b, b), rep(1 / g, g)))
+Ca &lt;- cbind(Sa, matrix(0, a, b), kronecker(diag(1/b, a) - 1/g, rbind(rep(1, b))))
+Cb &lt;- cbind(matrix(0, b, a), Sb, kronecker(rbind(rep(1, a)), diag(1/a, b) - 1/g))
+Cg &lt;- cbind(matrix(0, g, a + b), Sg)
+C &lt;- rbind(cbind(1, Cm), cbind(0, Ca), cbind(0, Cb), cbind(0, Cg))
+
+beta &lt;- rnorm(20)
+beta_star &lt;- drop(C %*% beta)
+round(c(sum(beta_star[2:5]), sum(beta_star[6:8])), 3)</code></pre>
+<pre><code>[1] 0 0</code></pre>
+<pre class="r"><code>B &lt;- matrix(beta_star[9:20], a, b, byrow = T)
+round(c(sum(B), rowSums(B), colSums(B)), 3)</code></pre>
+<pre><code>[1] 0 0 0 0 0 0 0 0</code></pre>
+</div>
+<div id="re-parameterisation" class="section level1">
+<h1>Re-parameterisation</h1>
+<p>The matrix <span class="math inline">\(S_a=(I_a-a^{-1}J_a)\)</span> is not of full-rank, but we can eigen-decompose as
+<span class="math display">\[
+S_a = Q_a I_{a-1}Q_a^\top \implies \Sigma_a = \sigma_\alpha^2Q_aI_{a-1}Q_a^\top
+\]</span>
+where <span class="math inline">\(Q_a\)</span> is <span class="math inline">\(a\times(a-1)\)</span> matrix containing the unit eigenvectors with non-zero eigenvalues. We can apply the transformation
+<span class="math display">\[
+\alpha^\star = Q_a^\top\alpha\sim N(0, \sigma_\alpha^2 I_{a-1})
+\]</span>
+where <span class="math inline">\(\alpha^\star\)</span> now has length <span class="math inline">\(a-1\)</span> and is identifiable. Additionally, this transformation implies a changed design matrix
+<span class="math display">\[
+X_a\alpha = X_aQ_aQ_a^\top\alpha = X_a^\star\alpha^\star.
+\]</span></p>
+<p>Similarly for the other term <span class="math inline">\(\beta\)</span> and for <span class="math inline">\(\gamma\)</span> with <span class="math inline">\(Q_{ab} = Q_a\otimes Q_b\)</span>. Therefore, we are now specifying priors
+<span class="math display">\[
+\begin{aligned}
+\alpha^\star &amp;= Q_a^\top\alpha \sim N(0, \sigma^2_\alpha I_{a-1}) \\
+\beta^\star &amp;= Q_b^\top\beta \sim N(0, \sigma^2_\beta I_{b-1}) \\
+Q_{ab} &amp;= Q_a\otimes Q_b \\
+\gamma^\star &amp;= Q_{ab}^\top\gamma \sim N(0, \sigma^2_gI_{ab-b+1})
+\end{aligned}
+\]</span>
+and model
+<span class="math display">\[
+\begin{aligned}
+\eta &amp;= 1^\top\mu + X_\alpha^\star\alpha^\star + X_\beta^\star\beta^\star + X_\gamma^\star\gamma^\star \\
+&amp;= X^\star\theta^\star \\
+X_\alpha^\star &amp;= X_\alpha Q_\alpha \\
+X_\beta^\star &amp;= X_\beta Q_\beta \\
+X_\gamma^\star &amp;= X_\gamma Q_\gamma.
+\end{aligned}
+\]</span></p>
+<pre class="r"><code>Qa &lt;- eigen(Sa)$vector[, 1:(a-1)]
+Qb &lt;- eigen(Sb)$vector[, 1:(b-1)]
+Qg &lt;- kronecker(Qa, Qb)
+Q &lt;- as.matrix(Matrix::bdiag(1, Qa, Qb, Qg))
+
+Xa_star &lt;- Xa %*% Qa
+Xb_star &lt;- Xb %*% Qb
+Xg_star &lt;- Xg %*% Qg
+X_star &lt;- cbind(1, Xa_star, Xb_star, Xg_star)
+print(X_star)</code></pre>
+<pre><code>      [,1]       [,2]       [,3]       [,4]       [,5]       [,6]       [,7]
+ [1,]    1  0.0000000  0.8660254  0.0000000  0.0000000  0.8164966  0.0000000
+ [2,]    1  0.0000000  0.8660254  0.0000000 -0.7071068 -0.4082483  0.0000000
+ [3,]    1  0.0000000  0.8660254  0.0000000  0.7071068 -0.4082483  0.0000000
+ [4,]    1 -0.2677175 -0.2886751  0.7713586  0.0000000  0.8164966  0.0000000
+ [5,]    1 -0.2677175 -0.2886751  0.7713586 -0.7071068 -0.4082483  0.1893048
+ [6,]    1 -0.2677175 -0.2886751  0.7713586  0.7071068 -0.4082483 -0.1893048
+ [7,]    1 -0.5341574 -0.2886751 -0.6175294  0.0000000  0.8164966  0.0000000
+ [8,]    1 -0.5341574 -0.2886751 -0.6175294 -0.7071068 -0.4082483  0.3777063
+ [9,]    1 -0.5341574 -0.2886751 -0.6175294  0.7071068 -0.4082483 -0.3777063
+[10,]    1  0.8018748 -0.2886751 -0.1538291  0.0000000  0.8164966  0.0000000
+[11,]    1  0.8018748 -0.2886751 -0.1538291 -0.7071068 -0.4082483 -0.5670111
+[12,]    1  0.8018748 -0.2886751 -0.1538291  0.7071068 -0.4082483  0.5670111
+            [,8]       [,9]      [,10]      [,11]       [,12]
+ [1,]  0.0000000  0.0000000  0.7071068  0.0000000  0.00000000
+ [2,]  0.0000000 -0.6123724 -0.3535534  0.0000000  0.00000000
+ [3,]  0.0000000  0.6123724 -0.3535534  0.0000000  0.00000000
+ [4,] -0.2185904  0.0000000 -0.2357023  0.0000000  0.62981162
+ [5,]  0.1092952  0.2041241  0.1178511 -0.5454329 -0.31490581
+ [6,]  0.1092952 -0.2041241  0.1178511  0.5454329 -0.31490581
+ [7,] -0.4361377  0.0000000 -0.2357023  0.0000000 -0.50421065
+ [8,]  0.2180688  0.2041241  0.1178511  0.4366592  0.25210533
+ [9,]  0.2180688 -0.2041241  0.1178511 -0.4366592  0.25210533
+[10,]  0.6547281  0.0000000 -0.2357023  0.0000000 -0.12560097
+[11,] -0.3273640  0.2041241  0.1178511  0.1087736  0.06280049
+[12,] -0.3273640 -0.2041241  0.1178511 -0.1087736  0.06280049</code></pre>
+<p>The same setup can be used, whether the model be one-way, multi-way, random-effects, or mixed-effects.</p>
+</div>
+<div id="example" class="section level1">
+<h1>Example</h1>
+<p>As a start, consider sampling based on the unidentifiable parameterisation versus the re-parameterised model.</p>
+<pre class="stan"><code>// log_reg
+data {
+  int&lt;lower=0&gt; N;
+  int&lt;lower=1&gt; P;
+  int&lt;lower=0&gt; y[N];
+  int&lt;lower=1&gt; n[N];
+  matrix[N, P] X;
+  vector[P] mu0;
+  matrix[P, P] Sigma0;
+}
+parameters {
+  vector[P] beta;
+}
+model {
+  target += multi_normal_lpdf(beta | mu0, Sigma0)
+          + binomial_logit_lpmf(y | n, X*beta);
+}</code></pre>
+<pre class="r"><code>library(rstan)
+library(tidybayes)
+
+# Data
+n &lt;- 1e2
+mu &lt;- 0.2
+alpha &lt;- seq(-0.25, 0.25, length.out = a)
+beta  &lt;- seq(-0.1, 0.1, length.out = b)
+gamma &lt;- rep(0, g)
+theta &lt;- c(mu, alpha, beta, gamma)
+P &lt;- length(theta)
+N &lt;- nrow(X)
+eta &lt;- X %*% theta
+y &lt;- rbinom(nrow(eta), n, plogis(eta))
+
+# Fit
+dat_X &lt;- list(N = N, P = P, y = y, n = rep(n, N), X = X, mu0 = rep(0, P), Sigma0 = diag(10, P))
+fit_X &lt;- sampling(log_reg, data = dat_X, refresh = 0, iter = 2e4)
+sam_X &lt;- as.matrix(fit_X, &quot;beta&quot;)
+round(get_elapsed_time(fit_X), 2)</code></pre>
+<pre><code>##         warmup sample
+## chain:1  14.15  17.89
+## chain:2  14.20  18.54
+## chain:3  14.46  18.16
+## chain:4  14.94  18.52</code></pre>
+<pre class="r"><code>P_star &lt;- ncol(X_star)
+dat_X_star &lt;- list(N = N, P = P_star, y = y, n = rep(n, N), X = X_star, mu0 = rep(0, P_star), Sigma0 = diag(10, P_star))
+fit_X_star &lt;- sampling(log_reg, data = dat_X_star, iter = 2e4, refresh = 0)
+sam_X_star &lt;- as.matrix(fit_X_star, &quot;beta&quot;)
+round(get_elapsed_time(fit_X_star), 2)</code></pre>
+<pre><code>##         warmup sample
+## chain:1   1.00   0.48
+## chain:2   0.91   0.46
+## chain:3   1.02   0.45
+## chain:4   0.93   0.45</code></pre>
+<p>There is a large discepancy in the time taken for the dynamic HMC to complete sampling. The reparameterisation involves an identifiable space of parameters and its a much simpler geometry for the sampler to work with. The resultant parameters are equivalent.</p>
+<pre class="r"><code>print(&quot;Linear predictor means&quot;)
+round(cbind(
+  &quot;True&quot; = eta,
+  &quot;Unidentifiable&quot; = apply(sam_X %*% t(X), 2, mean),
+  &quot;Identifiable&quot; = apply(sam_X_star %*% t(X_star), 2, mean)
+), 2)
+
+print(&quot;Linear predictor variance&quot;)
+round(cbind(
+  &quot;Unidentifiable&quot; = sqrt(diag(var(sam_X %*% t(X)))),
+  &quot;Identifiable&quot; = sqrt(diag(var(sam_X_star %*% t(X_star))))
+), 2)
+
+print(&quot;Constrained parameter means&quot;)
+round(cbind(
+  &quot;True&quot; = theta,
+  &quot;Unidentifiable&quot; = apply(sam_X %*% t(C), 2, mean),
+  &quot;Identifiable&quot; = apply(sam_X_star %*% t(Q), 2, mean)
+), 2)
+
+print(&quot;Constrained parameter variance&quot;)
+round(cbind(
+  &quot;Unidentifiable&quot; = sqrt(diag(var(sam_X %*% t(C)))),
+  &quot;Identifiable&quot; = sqrt(diag(var(sam_X_star %*% t(Q))))
+), 2)</code></pre>
+<pre><code>[1] &quot;Linear predictor means&quot;
+            Unidentifiable Identifiable
+ [1,] -0.15          -0.12        -0.12
+ [2,] -0.05           0.00         0.00
+ [3,]  0.05          -0.08        -0.08
+ [4,]  0.02           0.20         0.20
+ [5,]  0.12           0.12         0.12
+ [6,]  0.22           0.33         0.33
+ [7,]  0.18           0.04         0.04
+ [8,]  0.28           0.16         0.16
+ [9,]  0.38           0.32         0.33
+[10,]  0.35           0.49         0.49
+[11,]  0.45           0.25         0.24
+[12,]  0.55           0.45         0.45
+[1] &quot;Linear predictor variance&quot;
+      Unidentifiable Identifiable
+ [1,]           0.20         0.20
+ [2,]           0.20         0.20
+ [3,]           0.20         0.20
+ [4,]           0.20         0.20
+ [5,]           0.20         0.20
+ [6,]           0.21         0.20
+ [7,]           0.20         0.20
+ [8,]           0.20         0.20
+ [9,]           0.20         0.20
+[10,]           0.21         0.21
+[11,]           0.20         0.20
+[12,]           0.21         0.21
+[1] &quot;Constrained parameter means&quot;
+       True Unidentifiable Identifiable
+ [1,]  0.20           0.18         0.18
+ [2,] -0.25          -0.25        -0.25
+ [3,] -0.08           0.04         0.04
+ [4,]  0.08           0.00         0.00
+ [5,]  0.25           0.22         0.22
+ [6,] -0.10          -0.03        -0.03
+ [7,]  0.00          -0.05        -0.05
+ [8,]  0.10           0.07         0.08
+ [9,]  0.00          -0.03        -0.03
+[10,]  0.00           0.12         0.12
+[11,]  0.00          -0.09        -0.09
+[12,]  0.00           0.01         0.01
+[13,]  0.00          -0.05        -0.05
+[14,]  0.00           0.03         0.03
+[15,]  0.00          -0.11        -0.11
+[16,]  0.00           0.03         0.04
+[17,]  0.00           0.07         0.07
+[18,]  0.00           0.12         0.12
+[19,]  0.00          -0.10        -0.10
+[20,]  0.00          -0.02        -0.02
+[1] &quot;Constrained parameter variance&quot;
+      Unidentifiable Identifiable
+ [1,]           0.06         0.06
+ [2,]           0.10         0.10
+ [3,]           0.10         0.10
+ [4,]           0.10         0.10
+ [5,]           0.10         0.10
+ [6,]           0.08         0.08
+ [7,]           0.08         0.08
+ [8,]           0.08         0.08
+ [9,]           0.14         0.14
+[10,]           0.14         0.14
+[11,]           0.14         0.14
+[12,]           0.14         0.14
+[13,]           0.14         0.14
+[14,]           0.15         0.14
+[15,]           0.14         0.14
+[16,]           0.14         0.14
+[17,]           0.14         0.14
+[18,]           0.14         0.14
+[19,]           0.14         0.14
+[20,]           0.15         0.14</code></pre>
+<hr />
+</div>
+<div id="definitions" class="section level1">
+<h1>Definitions</h1>
+<p>Recall the <em>Kronecker product</em> definition
+<span class="math display">\[
+A\otimes B = \begin{pmatrix}
+a_11 B &amp; a_{12} B &amp; \cdots &amp; a_{1n}B \\
+a_21 B &amp; a_{22} B &amp; \cdots &amp; a_{2n}B \\
+\vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+a_m1 B &amp; a_{m2} B &amp; \cdots &amp; a_{mn}B
+\end{pmatrix}
+\]</span>
+and the <em>vec</em> operator definition
+<span class="math display">\[
+\text{vec}(A) = \begin{pmatrix} a_{11} \\ a_{21} \\ \vdots \\ a_{m1} \\ a_{12} \\ a_{22} \\ \vdots \\ a_{mn} \end{pmatrix}
+\]</span>
+whereby if <span class="math inline">\(A\)</span> is symmetric
+<span class="math display">\[
+\text{vec}(A) = \text{vec}(A^\top)
+\]</span></p>
+<hr />
+</div>
+<div id="references" class="section level1 unnumbered">
+<h1>References</h1>
+<div id="refs" class="references">
+<div id="ref-gelman2005">
+<p>Gelman, Andrew. 2005. “Analysis of Variance—Why It Is More Important Than Ever.” <em>Ann. Statist.</em> 33 (1): 1–53. <a href="https://doi.org/10.1214/009053604000001048">https://doi.org/10.1214/009053604000001048</a>.</p>
+</div>
+<div id="ref-gu2013">
+<p>Gu, Chong. 2013. <em>Smoothing Spline Anova Models</em>. Vol. 297. Springer Science &amp; Business Media.</p>
+</div>
+<div id="ref-rouder2012">
+<p>Rouder, Jeffrey N, Richard D Morey, Paul L Speckman, and Jordan M Province. 2012. “Default Bayes Factors for Anova Designs.” <em>Journal of Mathematical Psychology</em> 56 (5): 356–74.</p>
+</div>
+</div>
+</div>
+
+  </div>
+
+  <div id=links>
+    
+      <a class="basic-alignment left" href="https://jatotterdell.github.io/post/2019/06/04/prior-coding-effects/">&laquo; Prior Coding Effects</a>
+    
+    
+  </div>
+</section>
+
+<section id="comments">
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+
+(function() {
+      
+      
+      if (window.location.hostname == "localhost")
+                return;
+
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      var disqus_shortname = '';
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</section>
+
+
+  
+  
+<script src="https://jatotterdell.github.io/js/math-code.js"></script>
+<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+<script src="//cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="//cdn.bootcss.com/highlight.js/9.12.0/languages/r.min.js"></script>
+
+ <script>
+hljs.configure({languages: []});
+hljs.initHighlightingOnLoad();
+</script>
+
+<script type="text/x-mathjax-config"> 
+    MathJax.Hub.Config({ 
+        "HTML-CSS": { scale: 95, linebreaks: { automatic: true } }, 
+        SVG: { linebreaks: { automatic:true } }, 
+        // displayAlign: "left" 
+        });
+</script>
+
+</body>
+</html>
+

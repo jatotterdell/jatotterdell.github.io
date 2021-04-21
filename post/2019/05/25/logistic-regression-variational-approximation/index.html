@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  
+
+  <link rel="icon" type="image/png" href="https://jatotterdell.github.io/favicon.png">
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/github-gist.css" rel="stylesheet" id="theme-stylesheet">
+  <script src="https://jatotterdell.github.io/js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+  <title>
+    
+    
+     Logistic Regression Variational Approximation - I 
+    
+  </title>
+  <link rel="canonical" href="https://jatotterdell.github.io/post/2019/05/25/logistic-regression-variational-approximation/">
+
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/fonts.css" />
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/style.css" />
+
+  
+</head>
+
+<body>
+<section id=nav>
+  <h1><a href="https://jatotterdell.github.io/">James Totterdell</a></h1>
+  <ul>
+    
+    <li><a href="https://jatotterdell.github.io/">Home</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/about/">About</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/categories/">Categories</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/tags/">Tags</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/quotes/">Quotes</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/index.xml">RSS</a></li>
+    
+  </ul>
+</section>
+
+
+<section id=content>
+  <h1> Logistic Regression Variational Approximation - I </h1>
+
+  <div id=sub-header>
+    James Totterdell · 2019-05-25
+  </div>
+
+  <div class="entry-content">
+    
+
+<div id="TOC">
+<ul>
+<li><a href="#background">Background</a></li>
+<li><a href="#approximation-bounds">Approximation Bounds</a><ul>
+<li><a href="#bohning">Bohning</a></li>
+<li><a href="#jaakkola-jordan">Jaakkola-Jordan</a></li>
+<li><a href="#saul-jordan">Saul-Jordan</a></li>
+</ul></li>
+<li><a href="#examples">Examples</a><ul>
+<li><a href="#example-1">Example 1</a></li>
+<li><a href="#example-2">Example 2</a></li>
+<li><a href="#example-3-divergence">Example 3 (divergence)</a></li>
+</ul></li>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#useful-identities">Useful Identities</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+</div>
+
+<div id="background" class="section level1">
+<h1>Background</h1>
+<p>Previously, I had worked through derivations of variational approximations for a <a href="https://jatotterdell.github.io/post/2019/05/15/linear-regression-variational-approximation/">linear regression model</a> and <a href="https://jatotterdell.github.io/post/2019/03/28/variational-inference-for-exponential-proportional-hazards-model/">proportional hazards exponential model with right-censoring</a>. This post works through approximations for logistic regression models.</p>
+<p>Some general references on variational approximations for logistic regression are <span class="citation">Murphy (<a href="#ref-murphy2012machine" role="doc-biblioref">2012</a>)</span>, <span class="citation">Nolan and Wand (<a href="#ref-nolan2017" role="doc-biblioref">2017</a>)</span>, and <span class="citation">Wand (<a href="#ref-wand2017fast" role="doc-biblioref">2017</a>)</span>.</p>
+<p>Recall the evidence lower bound (ELBO) is given by
+<span class="math display">\[
+\begin{aligned}
+\ln p(y|\theta) &amp;\geq \mathcal{L}(y|\theta;q) \\
+&amp;= \mathbb E_q[\ln p(y,\theta) - \ln q(\theta)] \\
+&amp;= \mathbb E_q[\ln p(y|\theta)] + \mathbb E_q[\ln p(\theta)] + \mathbb H_q[\theta].
+\end{aligned}
+\]</span></p>
+<p>The model we are interested in is
+<span class="math display">\[
+\begin{aligned}
+y|\beta &amp;\sim Ber(\text{expit}(X\beta)) \\
+\beta &amp;\sim N(\mu_0,\Sigma_0),
+\end{aligned}
+\]</span>
+where <span class="math inline">\(\text{expit(x)} = \text{logit}^{-1}(x) = (1 + e^{-x})^{-1}\)</span>.</p>
+<p>The values <span class="math inline">\(\mathbb E_q[\ln p(\theta)]\)</span> and <span class="math inline">\(\mathbb H_q[\theta]\)</span> are known
+<span class="math display">\[
+\begin{aligned}
+  \mathbb E_q[\ln p(\beta)] &amp;= -\frac{1}{2}\left\{d\ln(2\pi) + \ln|\Sigma_0| + \mathbb E[(\beta - \mu_0)^\top\Sigma_0^{-1}(\beta-\mu_0)]\right\} \\
+  &amp;= -\frac{1}{2}\left\{d\ln(2\pi)+\ln|\Sigma_0| + (\mu_\beta-\mu_0)^\top\Sigma_0^{-1}(\mu_\beta-\mu_0) + \text{tr}(\Sigma_0^{-1}\Sigma_\beta)\right\} \\
+\mathbb H_q[\beta] &amp;= \frac{1}{2}\left[d(1 + \ln(2\pi)) + \ln|\Sigma_\beta|\right] \\
+\mathbb E_q[\ln p(\beta)] + \mathbb H_q[\beta]  &amp;= \frac{d}{2} + \frac{1}{2}\ln|\Sigma_\beta|-\frac{1}{2}\ln|\Sigma_0|-\frac{1}{2}(\mu_\beta-\mu_0)^\top\Sigma_0^{-1}(\mu_\beta-\mu_0) - \frac{1}{2}\text{tr}(\Sigma_0^{-1}\Sigma_\beta)
+\end{aligned}
+\]</span>
+where <span class="math inline">\(\mathbb E_q[\beta] = \mu_\beta\)</span> and <span class="math inline">\(\Sigma_\beta = \mathbb V_q[\beta]\)</span>.</p>
+<p>From the model likelihood we have
+<span class="math display">\[
+\ln p(y|\beta) = y^\top X\beta - 1^\top\ln(1 + \exp(X\beta))
+\]</span>
+which presents the challenge of finding
+<span class="math display">\[
+\mathbb E_q[\ln(1 + \exp(\eta_i))]
+\]</span>
+under a given <span class="math inline">\(q\)</span> where <span class="math inline">\(\eta_i = x_i^\top\beta\)</span>. Generally, we will assume that <span class="math inline">\(q(\beta) = N(\beta|\mu_\beta,\Sigma_\beta)\)</span>, that is, the approximating family is normal distributions.</p>
+<p>There are many ways we might deal with the intractability of this expectation. Common approaches are to utilise an approximation to the log-sum-exp term providing a new lower bound and simpler expectation, or to work with the integral directly utilising quadrature rules. In this post I will focus on approximation bounds and look at approaches using quadrature in the future.</p>
+</div>
+<div id="approximation-bounds" class="section level1">
+<h1>Approximation Bounds</h1>
+<p>The approach is to replace the intractable bound by one which is easier to work with. Generally, this involves using a new bound such that
+<span class="math display">\[
+\ln p(y|\theta) \geq \ln\tilde p(y|\theta).
+\]</span>
+by applying a lower bound on the value of <span class="math inline">\(-\ln(1 + \exp(\eta))\)</span>.</p>
+<p>All the fixed-point updates that follow are a result of general optimisation methods. Details can be found in <span class="citation">Rhode and Wand (<a href="#ref-rhode2016" role="doc-biblioref">2016</a>)</span>.</p>
+<div id="bohning" class="section level2">
+<h2>Bohning</h2>
+<p><span class="citation">Böhning and Lindsay (<a href="#ref-bohning1988monotonicity" role="doc-biblioref">1988</a>)</span> show how to adjust Newton-Raphson method to attain monotonical convergence by applying a lower-bound on the Hessian which is equivalent to a quadratic approximation change in a function relative to the point of Taylor series expansion. <span class="citation">Böhning (<a href="#ref-bohning1992multinomial" role="doc-biblioref">1992</a>)</span> gives an application of this bound to estimation in multinomial logistic regression.</p>
+<p>We perform a Taylor series expansion of the log-sum-exp function around a point <span class="math inline">\(\psi_i\)</span>.
+<span class="math display">\[
+\begin{aligned}
+\ln(1 + e^{\eta_i}) &amp;= \ln(1 + e^{\psi_i}) + (\eta_i - \psi_i)g(\psi_i)+\frac{1}{2}(\eta_i-\psi_i)^2H(\psi_i) \\
+g(\psi_i) = \frac{d}{d\psi_i}\ln(1 + e^{\psi_i})  &amp;= \text{expit}(\psi_i) = \exp(\psi_i - \ln(1 + e^{\psi_i})) \\
+H(\psi_i) = \frac{d^2}{d\psi_i^2}\ln(1 + e^{\psi_i})  &amp;= \text{expit}(\psi_i)(1 - \text{expit}(\psi_i))
+\end{aligned}
+\]</span>
+An upper bound on the function can be obtained by replacing <span class="math inline">\(H(\psi_i)\)</span> by the upper bound 1/4 (the value of <span class="math inline">\(\text{expit}(\eta)(1-\text{expit}(\eta))\leq1/4\)</span> being maximal when both values are <span class="math inline">\(1/2\)</span>).</p>
+<p>The result is a quadratic bound
+<span class="math display">\[
+\begin{aligned}
+\ln(1 + e^\eta) &amp;\leq \frac{1}{2}a\eta^2-b(\psi)\eta+c(\psi)\\
+&amp;= BB(\psi, x) \\
+a &amp;= \frac{1}{4} \\
+b(\psi) &amp;= a\psi - \text{expit}(\psi) \\
+c(\psi) &amp;= \frac{1}{2}a\psi^2 - \text{expit}(\psi)\psi + \ln(1 + e^\psi).
+\end{aligned}
+\]</span></p>
+<p>Figure 1 shows the Bohning bound compared to the log-sum-exp function for various fixed <span class="math inline">\(x\)</span> while varying <span class="math inline">\(\psi\)</span>. Figure 2 shows the bound on the sigmoid function itself as a function of <span class="math inline">\(x\)</span> for various fixed <span class="math inline">\(\psi\)</span>.</p>
+<pre class="r"><code>a_psi &lt;- 1/4
+b_psi &lt;- function(psi) psi/4 - plogis(psi)
+c_psi &lt;- function(psi) psi^2/8 - psi*plogis(psi) + log(1 + exp(psi))
+bb_bound &lt;- function(psi, x) {
+  1/2*a_psi*x^2 - b_psi(psi)*x + c_psi(psi)
+}</code></pre>
+<div class="figure"><span id="fig:unnamed-chunk-2"></span>
+<img src="https://jatotterdell.github.io/post/2019-05-25-logistic-regression-variational-approximation_files/figure-html/unnamed-chunk-2-1.png" alt="Examples of the Bohning bound as a function of $\psi$ for fixed $x$." width="672" />
+<p class="caption">
+Figure 1: Examples of the Bohning bound as a function of <span class="math inline">\(\psi\)</span> for fixed <span class="math inline">\(x\)</span>.
+</p>
+</div>
+<div class="figure"><span id="fig:unnamed-chunk-3"></span>
+<img src="https://jatotterdell.github.io/post/2019-05-25-logistic-regression-variational-approximation_files/figure-html/unnamed-chunk-3-1.png" alt="Examples of Bohning quadratic bound for $\text{expit}(x)$ as a function of $x$ for varying $\psi$." width="672" />
+<p class="caption">
+Figure 2: Examples of Bohning quadratic bound for <span class="math inline">\(\text{expit}(x)\)</span> as a function of <span class="math inline">\(x\)</span> for varying <span class="math inline">\(\psi\)</span>.
+</p>
+</div>
+<p>Substituting the bound for the log-sum-exp function we find
+<span class="math display">\[
+\sum_{i=1}^n \mathbb E_q\left[\frac{1}{2}ax_i^\top\beta\beta^\top x_i^\top-b(\psi_i)x_i^\top\beta+c(\psi_i)\right] =\quad \sum_{i=1}^n \frac{1}{2}ax_i^\top\mathbb E_q[\beta\beta^\top]x_i-b(\psi_i)x_i^\top\mu_\beta+c(\psi_i).
+\]</span>
+To optimise this new variational parameter we find
+<span class="math display">\[
+\mathsf{D}_{\psi_i}\mathcal{L}(q) = -\left(\frac{1}{4}-\frac{\partial}{\partial\psi_i}\text{expit}(\psi_i)\right)x_i^\top\mu_\beta+\left(\frac{1}{4}-\frac{\partial}{\partial\psi_i}\text{expit}(\psi_i)\right)\psi_i
+\]</span>
+which can only equal zero if <span class="math inline">\(\psi_i=x_i^\top\mu_\beta\)</span>.</p>
+<p>Additionally,
+<span class="math display">\[
+\begin{aligned}
+\mathsf{D}_{\mu_\beta}\mathcal{L}(q) &amp;= X^\top y-\frac{1}{4}X^\top X\mu_\beta + X^\top b(\psi) - \Sigma_0^{-1}(\mu_\beta-\mu_0) \\
+\mathsf{H}_{\mu_\beta}\mathcal{L}(q) &amp;= -\frac{1}{4}X^\top X-\Sigma_0^{-1}\mu_\beta
+\end{aligned}
+\]</span>
+from which we arrive at the iterative updates
+<span class="math display">\[
+\begin{cases}
+\psi &amp;\leftarrow X\mu_\beta \\
+\mu_\beta &amp;\leftarrow \Sigma_\beta\left(X^\top(y+b(\psi))+\Sigma_0^{-1}\mu_0\right) \\
+\Sigma_\beta &amp;\leftarrow \left(\Sigma_0+\frac{X^\top X}{4}\right)^{-1}
+\end{cases}
+\]</span>
+and evidence lower bound
+<span class="math display">\[
+\begin{aligned}
+\mathcal{L}(q;\psi) &amp;= \frac{d}{2} + \frac{1}{2}\ln|\Sigma_\beta|-\frac{1}{2}\ln|\Sigma_0|-\frac{1}{2}(\mu_\beta-\mu_0)^\top\Sigma_0^{-1}(\mu_\beta-\mu_0) - \frac{1}{2}\text{tr}(\Sigma_0^{-1}\Sigma_\beta) \\
+&amp;\quad
+y^\top X\mu_\beta-\frac{1}{8}\text{tr}\left(X(\Sigma + \mu_\beta\mu_\beta^\top)X^\top \right)+b(\psi)^\top X\mu_\beta-1^\top c(\psi).
+\end{aligned}
+\]</span></p>
+</div>
+<div id="jaakkola-jordan" class="section level2">
+<h2>Jaakkola-Jordan</h2>
+<p>The Jaakkola-Jordan approximation is based on the following arguments. They <span class="citation">(Jaakkola and Jordan <a href="#ref-jaakkola2000" role="doc-biblioref">2000</a>)</span> first symmetrise the function of interest
+<span class="math display">\[
+-\ln(1 + e^x) = -x/2-\ln\left(e^{x/2}+e^{-x/2}\right)
+\]</span>
+and then lower bound the function <span class="math inline">\(f(x) = -\ln\left(e^{x/2}+e^{-x/2}\right)\)</span> (which is convex) by a first order Taylor expansion on <span class="math inline">\(x^2\)</span>
+<span class="math display">\[
+-\ln\left(e^{x/2}+e^{-x/2}\right) = f(x) \geq f(\xi) + \frac{\partial f(\xi)}{\partial (\xi^2)}(x^2-\xi^2) = \frac{\xi}{2} - \ln(1 + e^\xi) - \frac{\tanh(\xi/2)}{4\xi}(x^2-\xi^2).
+\]</span>
+with exactness when <span class="math inline">\(x^2 = \xi^2\)</span>.</p>
+<p>Therefore, we have
+<span class="math display">\[
+\begin{aligned}
+\ln(1 + e^x) &amp;= \frac{x}{2} + \ln\left(e^{x/2}+e^{-x/2}\right)\\
+&amp;\leq \frac{x}{2} - \frac{\xi}{2} + \ln(1 + e^\xi) + \frac{\tanh(\xi/2)}{4\xi}(x^2-\xi^2) \\
+\text{JJ}(\xi,x) &amp;= \frac{1}{2}A(\xi)x^2-Bx+C(\xi) \\
+A(\xi) &amp;= 2\frac{\tanh(\xi/2)}{4\xi}\\
+B &amp;= -\frac{1}{2} \\
+C(\xi) &amp;= - \frac{\xi\tanh(\xi/2)}{4}-\frac{\xi}{2} + \ln(1 + e^\xi),
+\end{aligned}
+\]</span>
+and for each <span class="math inline">\(x\in\mathbb R\)</span> there exists a <span class="math inline">\(\xi\in\mathbb R\)</span> such that equality is attained.</p>
+<p>The bound is undefined at and symmetric about <span class="math inline">\(\xi=0\)</span> (Figure 3). Due to the symmetry and approximation attains a tight bound at both <span class="math inline">\(\xi=\pm\xi^\star\)</span> for a solution <span class="math inline">\(\xi^\star\)</span> (Figure 4). Compare this to the previous Bohning approximation which only attains a tight bound for one value of <span class="math inline">\(\psi\)</span>.</p>
+<pre class="r"><code>A_xi &lt;- function(xi) 2*tanh(xi/2)/(4*xi)
+B_xi &lt;- -1/2
+C_xi &lt;- function(xi) -xi/2 + log(1 + exp(xi)) - xi*tanh(xi/2)/4
+jj_bound &lt;- function(xi, x) {
+  A_xi(xi)/2*x^2 - B_xi*x + C_xi(xi)
+}</code></pre>
+<div class="figure"><span id="fig:unnamed-chunk-5"></span>
+<img src="https://jatotterdell.github.io/post/2019-05-25-logistic-regression-variational-approximation_files/figure-html/unnamed-chunk-5-1.png" alt="Examples of the Jaakkola-Jordan bound as a function of $\xi$ for fixed $x$." width="672" />
+<p class="caption">
+Figure 3: Examples of the Jaakkola-Jordan bound as a function of <span class="math inline">\(\xi\)</span> for fixed <span class="math inline">\(x\)</span>.
+</p>
+</div>
+<div class="figure"><span id="fig:unnamed-chunk-6"></span>
+<img src="https://jatotterdell.github.io/post/2019-05-25-logistic-regression-variational-approximation_files/figure-html/unnamed-chunk-6-1.png" alt="Examples of Jaakkola-Jordan quadratic bound for $\text{expit}(x)$ as a function of $x$ for varying $\xi$." width="672" />
+<p class="caption">
+Figure 4: Examples of Jaakkola-Jordan quadratic bound for <span class="math inline">\(\text{expit}(x)\)</span> as a function of <span class="math inline">\(x\)</span> for varying <span class="math inline">\(\xi\)</span>.
+</p>
+</div>
+<p>Using this new bound on <span class="math inline">\(\ln p(y|\beta)\)</span>, the function to maximise depends on the new bound
+<span class="math display">\[
+\begin{aligned}
+\mathbb E_q[\ln p(y|\beta)] &amp;= \mathbb E_q[y^\top X\beta] - 1^\top\mathbb E_q[\ln(1 + \exp(X\beta)]\\
+&amp;\geq \mathbb E_q[y^\top X\beta] - \mathbb E_q\left[-\frac{1}{2}X\beta + \beta^\top X^\top\text{diag}\left(\frac{\tanh(\xi/2)}{4\xi}\right)X\beta+1^\top C(\xi)\right]\\
+&amp;= \left(y-\frac{1}{2}1\right)^\top X\mu_\beta - \mathbb E_q\left[\beta^\top X^\top\text{diag}\left(\frac{\tanh(\xi/2)}{4\xi}\right)X\beta\right]+1^\top C(\xi)
+\end{aligned}
+\]</span></p>
+<p>We have
+<span class="math display">\[
+\mathbb E_q\left[\beta^\top X^\top\text{diag}\left(\frac{\tanh(\xi/2)}{4\xi}\right)X\beta\right] = \text{tr}\left(\mathbb E_q[\beta\beta^\top]X^\top \text{diag}\left(\frac{\tanh(\xi/2)}{4\xi}\right)X\right)
+\]</span>
+If we want to optimise with respect to <span class="math inline">\(\xi\)</span> we find that as a function of <span class="math inline">\(\xi\)</span>,
+<span class="math display">\[
+\begin{aligned}
+\mathsf{D}_{\xi_i}\left[\frac{\xi_i}{2} - \ln(1 + e^{\xi_i}) - \frac{\tanh(\xi_i/2)}{4\xi_i}\left(x_i^\top\mathbb E_q[\beta\beta^\top]x_i-\xi_i^2\right)\right] &amp;= \mathsf D_{\xi_i}\left[\frac{\tanh(\xi_i/2)}{4\xi_i}\right](x_i^\top\mathbb E_q[\beta\beta^\top]x_i-\xi_i^2)
+\end{aligned}
+\]</span>
+which implies (due to monotonicity of the required derivative and symmetry of the bound about <span class="math inline">\(\xi_i=0\)</span>) the update
+<span class="math display">\[
+\xi \leftarrow \sqrt{\text{diag}\left(X \left\{\mathbb V[\beta] + \mathbb E[\beta]\mathbb E[\beta]^\top\right\}X^\top\right)}
+\]</span></p>
+<p>Additionally,
+<span class="math display">\[
+\begin{aligned}
+\mathsf{D}_{\mu_\beta} &amp;= \left(y - \frac{1}{2}1\right)^\top X - \left(X^\top\text{diag}\left(\frac{\tanh(\xi/2)}{2\xi}\right)X\right)\mu_\beta -\Sigma_0^{-1}\mu_\beta + \Sigma_0^{-1}\mu_0 \\
+\mathsf{H}_{\mu_\beta} &amp;= -X^\top\text{diag}\left(\frac{\tanh(\xi/2)}{2\xi}\right)X - \Sigma_0^{-1}
+\end{aligned}
+\]</span>
+which results in the iterative updates
+<span class="math display">\[
+\begin{aligned}
+\xi &amp;\leftarrow \sqrt{\text{diag}\left(X \left\{\Sigma_\beta + \mu_\beta\mu_\beta^\top\right\}X^\top\right)}\\
+\Sigma_\beta &amp;\leftarrow \left(X^\top\text{diag}\left(\frac{\tanh(\xi/2)}{2\xi}\right)X+\Sigma_0^{-1}\right)^{-1} \\
+\mu_\beta &amp;\leftarrow \Sigma_\beta\left[\left(y - \frac{1}{2}1\right)^\top X + \Sigma_0^{-1}\mu_0\right] \\
+\end{aligned}
+\]</span></p>
+<p>Under this density, we have the following lower bound which is being maximised
+<span class="math display">\[
+\begin{aligned}
+\mathcal{L}(q;\xi) &amp;= \left(y-\frac{1}{2}1\right)^\top X\mu_\beta - \frac{1}{2}\text{tr}\left( X^\top\text{diag}\left(\frac{\tanh(\xi/2)}{2\xi}\right)X\Sigma_\beta\right) -\frac{1}{2}\mu_\beta^\top X^\top\text{diag}\left(\frac{\tanh(\xi/2)}{2\xi}\right)X\mu_\beta \\
+&amp;\quad \frac{d}{2} + \frac{1}{2}\ln|\Sigma_\beta|-\frac{1}{2}\ln|\Sigma_0|-\frac{1}{2}(\mu_\beta-\mu_0)^\top\Sigma_0^{-1}(\mu_\beta-\mu_0) - \frac{1}{2}\text{tr}(\Sigma_0^{-1}\Sigma_\beta) \\
+&amp;\quad+ \sum_{i=1}^n \xi_i/2 - \ln(1+e^{\xi_i}) + (\xi_i/4)\tanh(\xi_i/2) \\
+&amp;= \frac{1}{2}\mu_\beta^\top\Sigma_\beta^{-1}\mu_\beta-\frac{1}{2}\mu_0\Sigma_0^{-1}\mu_0+\frac{1}{2}\ln|\Sigma_\beta|-\frac{1}{2}\ln|\Sigma_0| + \sum_{i=1}^n \xi_i/2 - \ln(1+e^{\xi_i}) + (\xi_i/4)\tanh(\xi_i/2)
+\end{aligned}
+\]</span></p>
+<p>It turns out <span class="citation">(see Durante and Rigon <a href="#ref-durante2017conditionally" role="doc-biblioref">2017</a>)</span>, that the Jaakkola-Jordan bound is related to the Polya-gamma augmented Gibbs sampling scheme for logistic regression <span class="citation">(Polson, Scott, and Windle <a href="#ref-polson2013bayesian" role="doc-biblioref">2013</a>)</span>.</p>
+</div>
+<div id="saul-jordan" class="section level2">
+<h2>Saul-Jordan</h2>
+<p>The Saul-Jordan approximation is based on the fact that, if <span class="math inline">\(x\sim N(\mu,\sigma^2)\)</span>, then for any <span class="math inline">\(\omega\in\mathbb R\)</span>
+<span class="math display">\[
+\mathbb E_X[\ln(1 + e^x)] \leq \frac{1}{2}\omega^2\sigma^2+\ln\left[1+\exp\left(\mu + \frac{1}{2}(1-2\omega)\sigma^2\right)\right]=\text{SJ}(\omega,\mu,\sigma).
+\]</span></p>
+<p>For example, if <span class="math inline">\(x\sim N(0,1)\)</span> then we estimate <span class="math inline">\(\mathbb E_x[\ln(1+e^x)]\)</span> as</p>
+<pre class="r"><code>x &lt;- rnorm(1e6)
+mx &lt;- mean(log(1 + exp(x)))
+print(mean(mx))</code></pre>
+<pre><code>[1] 0.8067052</code></pre>
+<p>and the optimal Saul-Jordan lower bound is attained at <span class="math inline">\(\omega=0.5\)</span>.</p>
+<pre class="r"><code>sj_bound &lt;- function(omega, mu, sigma)
+  0.5*omega^2*sigma^2 + log(1 + exp(mu + 0.5*(1 - 2*omega)*sigma^2))
+
+opt_omega &lt;- optimise(sj_bound, c(0,1), mu = 0, sigma = 1)
+print(opt_omega)</code></pre>
+<pre><code>$minimum
+[1] 0.5
+
+$objective
+[1] 0.8181472</code></pre>
+<p>Figure 5 gives some examples of the bounding function compared to a Monte Carlo estimate of the true value based on <span class="math inline">\(10^6\)</span> samples. Note that the approximation appears to worsen as the variance increases.</p>
+<div class="figure"><span id="fig:unnamed-chunk-9"></span>
+<img src="https://jatotterdell.github.io/post/2019-05-25-logistic-regression-variational-approximation_files/figure-html/unnamed-chunk-9-1.png" alt="Examples of Saul-Jordan bound as a function of $\omega$ for varying $\mu$ and $\sigma$." width="672" />
+<p class="caption">
+Figure 5: Examples of Saul-Jordan bound as a function of <span class="math inline">\(\omega\)</span> for varying <span class="math inline">\(\mu\)</span> and <span class="math inline">\(\sigma\)</span>.
+</p>
+</div>
+<p>If we apply the above bound to the relevant term in the ELBO we then have an new lower bound for the likelihood term
+<span class="math display">\[
+\begin{aligned}
+\mathbb E_q[\ln p(y|\beta)] &amp;= \mathbb E_q[y^\top X\beta] - 1^\top\mathbb E_q[\ln(1 + \exp(X\beta))] \\
+&amp;\geq y^\top X\mu_\beta - \frac{1}{2}(\omega^2)^\top\text{diag}(X\Sigma_\beta X^\top) - \\ &amp;\quad1^\top\ln\left[1+\exp(X\mu_\beta+\frac{1}{2}(1-2\omega)\odot\text{diag}(X\Sigma_\beta X^\top)\right]
+\end{aligned}
+\]</span></p>
+<p>We find the derivatives
+<span class="math display">\[
+\begin{aligned}
+\mathsf{D}_{\omega} \mathcal{L}(q) &amp;= \left[\text{expit}\left\{X\mu_\beta+\frac{1}{2}(1-2\omega)\odot\text{diag}\left(X\Sigma_\beta X^\top\right)\right\} - \omega\right]\odot\text{diag}(X\Sigma_\beta X^\top)\\
+\mathsf{D}_{\mu_\beta} \mathcal{L}(q) &amp;= X^\top\left[y- \text{expit}\left(X\mu_\beta+\frac{1}{2}(1-2\omega)\odot\text{diag}\left(X\Sigma_\beta X^\top\right)\right)\right]-\Sigma_0^{-1}(\mu_\beta-\mu_0)\\
+\mathsf{H}_{\mu_\beta}\mathcal{L}(q) &amp;= -X^\top\left(\frac{1}{2}\frac{1}{1+\cosh\left[X\mu_\beta+\frac{1}{2}(1-2\omega)\odot\text{diag}(X\Sigma_\beta X^\top)\right]}\right)X-\Sigma_0^{-1}.
+\end{aligned}
+\]</span>
+Using the standard results in <span class="citation">Rhode and Wand (<a href="#ref-rhode2016" role="doc-biblioref">2016</a>)</span> and setting <span class="math inline">\(\mathsf{D}_{\omega}\mathcal{L}(q)=0\)</span> we find the updates
+<span class="math display">\[
+\begin{cases}
+\omega_0 &amp;\leftarrow X\mu_\beta+\frac{1}{2}(1-2\omega)\odot\text{diag}(X\Sigma_\beta X^\top) \\
+\omega_1 &amp;\leftarrow \text{expit}(\omega_0) \\
+\omega_2 &amp;\leftarrow \frac{1}{2(1+\cosh(\omega_0))}\\
+\nu_\beta &amp;\leftarrow X^\top(y-\omega_1)-\Sigma_0^{-1}(\mu_\beta-\mu_0)\\
+\Sigma_\beta &amp;\leftarrow \left(X^\top\text{diag}(\omega_2)X+\Sigma_0^{-1}\right)^{-1}\\
+\mu_\beta &amp;\leftarrow \mu_\beta + \Sigma_\beta\nu_\beta
+\end{cases}
+\]</span>
+and the lower bound
+<span class="math display">\[
+\begin{aligned}
+\mathcal{L}(q;\omega) &amp;= \frac{d}{2} + \frac{1}{2}\ln|\Sigma_\beta| - \frac{1}{2}\ln|\Sigma_0| \\
+&amp;\quad -\frac{1}{2}\text{tr}(\Sigma^{-1}_0\Sigma)-\frac{1}{2}(\mu_\beta-\mu_0)\Sigma_0^{-1}(\mu_\beta-\mu_0) \\
+&amp;\quad +y^\top X\mu_\beta - \frac{1}{2}(\omega^2)^\top\text{diag}\left(X\Sigma_\beta X^\top\right) \\
+&amp;\quad -1^\top\ln\left(1 + \exp(X\mu_\beta + \frac{1}{2}(1-2\omega)\odot\text{diag}(X\Sigma_\beta X^\top))\right)
+\end{aligned}
+\]</span></p>
+</div>
+</div>
+<div id="examples" class="section level1">
+<h1>Examples</h1>
+<p>The variational approximations were implemented in <code>R</code>.</p>
+<pre class="r"><code>b_psi &lt;- function(psi) {
+  psi/4 - plogis(psi)
+}
+c_psi &lt;- function(psi) {
+  psi^2/8 - psi*plogis(psi) + log(1 + exp(psi))
+}
+
+bb_log_reg &lt;- function(
+  X, y,
+  mu0 = rep(0, ncol(X)), Sigma0 = diag(1, ncol(X)), 
+  maxiter = 100, tol = 1e-8, verbose = TRUE  
+) {
+  
+  d &lt;- ncol(X)
+  n &lt;- nrow(X)
+  invSigma0 &lt;- solve(Sigma0)
+  invSigma0_x_mu0 &lt;- invSigma0 %*% mu0
+  mu &lt;- mu0
+  Sigma &lt;- Sigma0
+  psi &lt;- X %*% mu
+  
+  lb &lt;- numeric(maxiter)
+  i &lt;- 0
+  converged &lt;- FALSE
+  if(verbose) cat(&quot;\nStarting Bohning&#39;s bound optimisation:\n&quot;)
+  while(i &lt;= maxiter &amp; !converged) {
+    i &lt;- i + 1
+    psi &lt;- X %*% mu
+    Sigma &lt;- solve(crossprod(X, X)/4 + invSigma0)
+    mu &lt;- (Sigma %*% (invSigma0_x_mu0 + crossprod(X, y + b_psi(psi))))[, 1]
+    lb[i] &lt;- 0.5*d + 0.5*log(det(Sigma)) - 0.5*log(det(Sigma0)) -
+      0.5*crossprod(mu - mu0, invSigma0 %*% (mu - mu0)) - 0.5*sum(diag(invSigma0 %*% Sigma)) +
+      crossprod(y, X %*% mu) -
+      1/8*sum(diag(X %*% (Sigma + mu %o% mu) %*% t(X))) + crossprod(b_psi(psi), X %*% mu) - sum(c_psi(psi))
+    
+    if(verbose) cat(sprintf(&quot;Iteration %3d, ELBO = %5.10f\n&quot;, i, lb[i]))
+    if(i &gt; 1 &amp;&amp; abs(lb[i] - lb[i - 1]) &lt; tol) converged &lt;- TRUE
+  }
+  return(list(lb = lb[1:i], mu = mu, Sigma = Sigma, psi = psi))  
+}
+
+jj_log_reg &lt;- function(
+  X, y,
+  mu0 = rep(0, ncol(X)), Sigma0 = diag(1, ncol(X)), 
+  maxiter = 100, tol = 1e-8, verbose = TRUE) {
+  
+  d &lt;- ncol(X)
+  n &lt;- nrow(X)
+  invSigma0 &lt;- solve(Sigma0)
+  invSigma0_x_mu0 &lt;- invSigma0 %*% mu0
+  mu &lt;- mu0
+  Sigma &lt;- Sigma0
+  xi &lt;- y
+  Xy &lt;- crossprod(X, y - 0.5)
+  
+  lb &lt;- numeric(maxiter)
+  i &lt;- 0
+  converged &lt;- FALSE
+  if(verbose) cat(&quot;\nStarting Jaakkola-Jordan optimisation:\n&quot;)
+  while(i &lt;= maxiter &amp; !converged) {
+    i &lt;- i + 1
+    Xi &lt;- Sigma + mu %o% mu
+    xi &lt;- sqrt(diag(X %*% Xi %*% t(X)))
+    Sigma &lt;- solve(crossprod(X, diag(tanh(xi/2)/(2*xi)) %*% X) + invSigma0)
+    mu &lt;- (Sigma %*% (Xy + invSigma0_x_mu0))[, 1]
+    lb[i] &lt;- 0.5*log(det(Sigma)) - 0.5*log(det(Sigma0)) +
+      0.5*crossprod(mu, solve(Sigma) %*% mu) - 0.5*crossprod(mu0, invSigma0_x_mu0) +
+      sum(0.5*xi - log(1 + exp(xi)) + (xi/4)*tanh(xi/2))
+    
+    
+    if(verbose) cat(sprintf(&quot;Iteration %3d, ELBO = %5.10f\n&quot;, i, lb[i]))
+    if(i &gt; 1 &amp;&amp; abs(lb[i] - lb[i - 1]) &lt; tol) converged &lt;- TRUE
+  }
+  return(list(lb = lb[1:i], mu = mu, Sigma = Sigma, xi = xi))
+}
+
+sj_log_reg &lt;- function(
+    X, y,
+  mu0 = rep(0, ncol(X)), Sigma0 = diag(1, ncol(X)), 
+  maxiter = 100, tol = 1e-8, verbose = TRUE, muinit = mu0, Sigmainit = Sigma0) {
+  
+  d &lt;- ncol(X)
+  n &lt;- nrow(X)
+  invSigma0 &lt;- solve(Sigma0)
+  invSigma0_x_mu0 &lt;- invSigma0 %*% mu0
+  mu &lt;- muinit
+  Sigma &lt;- Sigmainit
+  omega1 &lt;- y
+  
+  lb &lt;- numeric(maxiter)
+  i &lt;- 0
+  converged &lt;- FALSE
+  if(verbose) cat(&quot;\nStarting Saul-Jordan optimisation:\n&quot;)
+  while(i &lt;= maxiter &amp; !converged) {
+    i &lt;- i + 1
+    omega0 &lt;- drop(X%*%mu + 0.5*(1 - 2*omega1) * diag(X%*%Sigma%*%t(X)))
+    omega1 &lt;- plogis(omega0)
+    omega2 &lt;- 1/(2*(1 + cosh(omega0)))
+    nu &lt;- crossprod(X, y - omega1) - invSigma0 %*% (mu - mu0)
+    Sigma &lt;- solve(crossprod(X, diag(omega2) %*% X) + invSigma0)
+    mu &lt;- (mu + Sigma %*% nu)
+    
+    lb[i] &lt;- 0.5*d + 0.5*log(det(Sigma)) - 0.5*log(det(Sigma0)) -
+      0.5*crossprod(mu - mu0, invSigma0 %*% (mu - mu0)) - 0.5*sum(diag(invSigma0 %*% Sigma)) +
+      crossprod(y, X %*% mu) - 0.5*crossprod(omega1^2, diag(X %*% Sigma %*% t(X))) -
+      sum(log(1 + exp(X %*% mu + 0.5 * (1 - 2*omega1) * diag(X %*% Sigma %*% t(X)))))
+    
+    if(verbose) cat(sprintf(&quot;Iteration %3d, ELBO = %5.10f\n&quot;, i, lb[i]))
+    if(i &gt; 1 &amp;&amp; abs(lb[i] - lb[i - 1]) &lt; tol) converged &lt;- TRUE
+  }
+  return(list(lb = lb[1:i], mu = mu, Sigma = Sigma, omega1 = omega1))
+}</code></pre>
+<pre class="stan"><code>// log_reg
+data {
+  int&lt;lower=0&gt; N;
+  int&lt;lower=1&gt; P;
+  int&lt;lower=0,upper=1&gt; y[N];
+  matrix[N, P] X;
+  vector[P] mu0;
+  matrix[P, P] Sigma0;
+}
+parameters {
+  vector[P] beta;
+}
+model {
+  target += multi_normal_lpdf(beta | mu0, Sigma0);
+  target += bernoulli_logit_lpmf(y | X*beta);
+}</code></pre>
+<p>Below are a few examples of using the algorithms with approximations compared to posterior estimates obtained via Stan. We simulate data from a four parameter model under a weakly informative and strongly informative prior.</p>
+<div id="example-1" class="section level2">
+<h2>Example 1</h2>
+<pre class="r"><code>library(rstan)
+library(bridgesampling)
+
+set.seed(123)
+X &lt;- cbind(1, runif(250), rnorm(250), sample(0:1, 250, replace = T))
+y &lt;- rbinom(250, 1, plogis(X %*% c(-4, 4, 0, 2)))
+
+mc_fit &lt;- sampling(log_reg, refresh = 0, iter = 1e4,
+                   data = list(N = 250, P = 4, X = X, y = y, mu0 = rep(0,4), Sigma0 = diag(1,4)))
+draws &lt;- extract(mc_fit)$beta
+ml_est &lt;- bridge_sampler(mc_fit, silent = TRUE)
+c(&quot;logm&quot; = ml_est$logml, do.call(c, error_measures(ml_est)))</code></pre>
+<pre><code>                  logm                    re2                     cv 
+    &quot;-130.70016976142&quot; &quot;1.95159845904399e-07&quot; &quot;0.000441768996087773&quot; 
+            percentage 
+                  &quot;0%&quot; </code></pre>
+<pre class="r"><code>bb_fit &lt;- bb_log_reg(X, y)</code></pre>
+<pre><code>
+Starting Bohning&#39;s bound optimisation:
+Iteration   1, ELBO = -136.6862931121
+Iteration   2, ELBO = -132.1218471928
+Iteration   3, ELBO = -131.5397621449
+Iteration   4, ELBO = -131.4203424997
+Iteration   5, ELBO = -131.3927353927
+Iteration   6, ELBO = -131.3860285508
+Iteration   7, ELBO = -131.3843613207
+Iteration   8, ELBO = -131.3839422342
+Iteration   9, ELBO = -131.3838363092
+Iteration  10, ELBO = -131.3838094629
+Iteration  11, ELBO = -131.3838026495
+Iteration  12, ELBO = -131.3838009190
+Iteration  13, ELBO = -131.3838004794
+Iteration  14, ELBO = -131.3838003677
+Iteration  15, ELBO = -131.3838003393
+Iteration  16, ELBO = -131.3838003321</code></pre>
+<pre class="r"><code>jj_fit &lt;- jj_log_reg(X, y)</code></pre>
+<pre><code>
+Starting Jaakkola-Jordan optimisation:
+Iteration   1, ELBO = -138.1852835479
+Iteration   2, ELBO = -131.2854654902
+Iteration   3, ELBO = -131.1617743389
+Iteration   4, ELBO = -131.1460168372
+Iteration   5, ELBO = -131.1438972567
+Iteration   6, ELBO = -131.1436093089
+Iteration   7, ELBO = -131.1435700586
+Iteration   8, ELBO = -131.1435647018
+Iteration   9, ELBO = -131.1435639703
+Iteration  10, ELBO = -131.1435638705
+Iteration  11, ELBO = -131.1435638568
+Iteration  12, ELBO = -131.1435638550</code></pre>
+<pre class="r"><code>sj_fit &lt;- sj_log_reg(X, y)</code></pre>
+<pre><code>
+Starting Saul-Jordan optimisation:
+Iteration   1, ELBO = -144.1383436591
+Iteration   2, ELBO = -132.2772576553
+Iteration   3, ELBO = -130.7474966363
+Iteration   4, ELBO = -130.7203265204
+Iteration   5, ELBO = -130.7197937190
+Iteration   6, ELBO = -130.7197813211
+Iteration   7, ELBO = -130.7197810128
+Iteration   8, ELBO = -130.7197810047</code></pre>
+<p>Saul-Jordan bound is much tighter on the marginal likelihood compared to the other two bounds.</p>
+<pre class="r"><code>nice_par(mar = c(3,4,2,1))
+x &lt;- 1:max(length(bb_fit$lb), length(jj_fit$lb))
+plot(bb_fit$lb, ylim = c(-132, -130), type = &#39;l&#39;, xlim = c(0,max(x)+4),
+     xlab = expression(i), ylab = expression(ELBO(i)))
+lines(1:length(jj_fit$lb), jj_fit$lb, lty = 1)
+lines(1:length(sj_fit$lb), sj_fit$lb, lty = 1)
+abline(h = ml_est$logml, lty = 2)
+text(x = c(12, length(bb_fit$lb), length(jj_fit$lb), length(sj_fit$lb)), 
+     y = c(ml_est$logml+0.1, max(bb_fit$lb), max(jj_fit$lb), max(sj_fit$lb)), 
+     labels = c(&quot;MCMC Bridge Sampling&quot;, &quot;Bohning&quot;, &quot;Jaakkola-Jordan&quot;, &quot;Saul-Jordan&quot;), 
+     pos = 4, cex = 0.9)</code></pre>
+<div class="figure"><span id="fig:unnamed-chunk-13"></span>
+<img src="https://jatotterdell.github.io/post/2019-05-25-logistic-regression-variational-approximation_files/figure-html/unnamed-chunk-13-1.png" alt="Comparison of evidence lower bounds with estimated marginal likelihood from bridge sampling of Stan posterior draws." width="576" />
+<p class="caption">
+Figure 6: Comparison of evidence lower bounds with estimated marginal likelihood from bridge sampling of Stan posterior draws.
+</p>
+</div>
+<p>Tighter bound provides a better overall fit as evidenced by the comparisons in Figure 4.</p>
+<div class="figure"><span id="fig:unnamed-chunk-14"></span>
+<img src="https://jatotterdell.github.io/post/2019-05-25-logistic-regression-variational-approximation_files/figure-html/unnamed-chunk-14-1.png" alt="Comparison of MCMC and a) Bohning approximation, b) Jaakkola-Jordan approximation, c) Saul-Jordan approximation." width="816" />
+<p class="caption">
+Figure 7: Comparison of MCMC and a) Bohning approximation, b) Jaakkola-Jordan approximation, c) Saul-Jordan approximation.
+</p>
+</div>
+</div>
+<div id="example-2" class="section level2">
+<h2>Example 2</h2>
+<p>Another example with a strongly informative prior.</p>
+<pre class="r"><code>set.seed(17)
+n &lt;- 50
+X &lt;- cbind(1, runif(n), rnorm(n), sample(0:1, n, replace = T))
+y &lt;- rbinom(n, 1, plogis(X %*% c(-4, 4, 0, 2)))
+mu0 &lt;- rep(5, 4)
+Sigma0 &lt;- diag(0.1, 4)
+
+mc_fit &lt;- sampling(log_reg, refresh = 0, iter = 1e4,
+                   data = list(N = n, P = 4, X = X, y = y, mu0 = mu0, Sigma0 = Sigma0))
+draws &lt;- extract(mc_fit)$beta
+ml_est &lt;- bridge_sampler(mc_fit, silent = TRUE)
+c(&quot;logm&quot; = ml_est$logml, do.call(c, error_measures(ml_est)))</code></pre>
+<pre><code>                  logm                    re2                     cv 
+   &quot;-222.974712426576&quot;  &quot;5.4166359728906e-08&quot; &quot;0.000232736674653794&quot; 
+            percentage 
+                  &quot;0%&quot; </code></pre>
+<pre class="r"><code>bb_fit &lt;- bb_log_reg(X, y, mu0, Sigma0)</code></pre>
+<pre><code>
+Starting Bohning&#39;s bound optimisation:
+Iteration   1, ELBO = -253.3819353254
+Iteration   2, ELBO = -235.9904529936
+Iteration   3, ELBO = -228.8813246036
+Iteration   4, ELBO = -225.9754733461
+Iteration   5, ELBO = -224.7945801547
+Iteration   6, ELBO = -224.3161162161
+Iteration   7, ELBO = -224.1222873212
+Iteration   8, ELBO = -224.0436426944
+Iteration   9, ELBO = -224.0116608435
+Iteration  10, ELBO = -223.9986249109
+Iteration  11, ELBO = -223.9933005415
+Iteration  12, ELBO = -223.9911222252
+Iteration  13, ELBO = -223.9902298612
+Iteration  14, ELBO = -223.9898639338
+Iteration  15, ELBO = -223.9897137685
+Iteration  16, ELBO = -223.9896521118
+Iteration  17, ELBO = -223.9896267859
+Iteration  18, ELBO = -223.9896163801
+Iteration  19, ELBO = -223.9896121038
+Iteration  20, ELBO = -223.9896103461
+Iteration  21, ELBO = -223.9896096236
+Iteration  22, ELBO = -223.9896093266
+Iteration  23, ELBO = -223.9896092045
+Iteration  24, ELBO = -223.9896091543
+Iteration  25, ELBO = -223.9896091336
+Iteration  26, ELBO = -223.9896091251</code></pre>
+<pre class="r"><code>jj_fit &lt;- jj_log_reg(X, y, mu0, Sigma0)</code></pre>
+<pre><code>
+Starting Jaakkola-Jordan optimisation:
+Iteration   1, ELBO = -234.1256982263
+Iteration   2, ELBO = -224.0077883131
+Iteration   3, ELBO = -223.3756601279
+Iteration   4, ELBO = -223.3236753050
+Iteration   5, ELBO = -223.3191115840
+Iteration   6, ELBO = -223.3187028904
+Iteration   7, ELBO = -223.3186660325
+Iteration   8, ELBO = -223.3186626992
+Iteration   9, ELBO = -223.3186623974
+Iteration  10, ELBO = -223.3186623700
+Iteration  11, ELBO = -223.3186623675</code></pre>
+<pre class="r"><code>sj_fit &lt;- sj_log_reg(X, y, mu0, Sigma0)</code></pre>
+<pre><code>
+Starting Saul-Jordan optimisation:
+Iteration   1, ELBO = -223.2681695675
+Iteration   2, ELBO = -222.9814171756
+Iteration   3, ELBO = -222.9777292984
+Iteration   4, ELBO = -222.9776740965
+Iteration   5, ELBO = -222.9776732546
+Iteration   6, ELBO = -222.9776732418
+Iteration   7, ELBO = -222.9776732416</code></pre>
+<pre class="r"><code>nice_par(mar = c(3,4,2,1))
+x &lt;- 1:max(length(bb_fit$lb), length(jj_fit$lb))
+plot(bb_fit$lb, type = &#39;l&#39;, ylim = c(-225, -222), xlim = c(0,max(x)+4),
+     xlab = expression(i), ylab = expression(ELBO(i)))
+lines(1:length(jj_fit$lb), jj_fit$lb, lty = 1)
+lines(1:length(sj_fit$lb), sj_fit$lb, lty = 1)
+abline(h = ml_est$logml, lty = 2)
+text(x = c(15, length(bb_fit$lb), length(jj_fit$lb), length(sj_fit$lb)), 
+     y = c(ml_est$logml+0.1, max(bb_fit$lb), max(jj_fit$lb), max(sj_fit$lb)), 
+     labels = c(&quot;MCMC Bridge Sampling&quot;, &quot;Bohning&quot;, &quot;Jaakkola-Jordan&quot;, &quot;Saul-Jordan&quot;), 
+     pos = 4, cex = 0.9)</code></pre>
+<div class="figure"><span id="fig:unnamed-chunk-16"></span>
+<img src="https://jatotterdell.github.io/post/2019-05-25-logistic-regression-variational-approximation_files/figure-html/unnamed-chunk-16-1.png" alt="Comparison of evidence lower bounds with estimated marginal likelihood from bridge sampling of Stan posterior draws." width="576" />
+<p class="caption">
+Figure 8: Comparison of evidence lower bounds with estimated marginal likelihood from bridge sampling of Stan posterior draws.
+</p>
+</div>
+<div class="figure"><span id="fig:unnamed-chunk-17"></span>
+<img src="https://jatotterdell.github.io/post/2019-05-25-logistic-regression-variational-approximation_files/figure-html/unnamed-chunk-17-1.png" alt="Comparison of MCMC and a) Bohning approximation, b) Jaakkola-Jordan approximation, c) Saul-Jordan approximation." width="816" />
+<p class="caption">
+Figure 9: Comparison of MCMC and a) Bohning approximation, b) Jaakkola-Jordan approximation, c) Saul-Jordan approximation.
+</p>
+</div>
+</div>
+<div id="example-3-divergence" class="section level2">
+<h2>Example 3 (divergence)</h2>
+<p>In this instance we specify a diffuse prior <span class="math inline">\(\beta\sim N(0, 10I)\)</span>. In this case the Saul-Jordan updates diverge. This can be addressed by initalising with Jaakkola Jordan updates, and then switching to Saul-Jordan.</p>
+<pre class="r"><code>set.seed(17)
+n &lt;- 50
+X &lt;- cbind(1, runif(n), rnorm(n), sample(0:1, n, replace = T))
+y &lt;- rbinom(n, 1, plogis(X %*% c(-4, 4, 0, 2)))
+mu0 &lt;- rep(5, 4)
+Sigma0 &lt;- diag(10, 4)
+
+mc_fit &lt;- sampling(log_reg, refresh = 0, iter = 1e4,
+                   data = list(N = n, P = 4, X = X, y = y, mu0 = mu0, Sigma0 = Sigma0))
+draws &lt;- extract(mc_fit)$beta
+ml_est &lt;- bridge_sampler(mc_fit, silent = TRUE)
+c(&quot;logm&quot; = ml_est$logml, do.call(c, error_measures(ml_est)))</code></pre>
+<pre><code>                  logm                    re2                     cv 
+   &quot;-37.4755263328553&quot; &quot;9.31771281055153e-07&quot; &quot;0.000965283005680279&quot; 
+            percentage 
+                  &quot;0%&quot; </code></pre>
+<pre class="r"><code>bb_fit &lt;- bb_log_reg(X, y, mu0, Sigma0, tol= 1e-5)</code></pre>
+<pre><code>
+Starting Bohning&#39;s bound optimisation:
+Iteration   1, ELBO = -245.3022653704
+Iteration   2, ELBO = -191.7385416887
+Iteration   3, ELBO = -149.1998030217
+Iteration   4, ELBO = -116.7759865866
+Iteration   5, ELBO = -92.7062164260
+Iteration   6, ELBO = -74.2998095254
+Iteration   7, ELBO = -60.2835201941
+Iteration   8, ELBO = -50.2994349160
+Iteration   9, ELBO = -43.9822677319
+Iteration  10, ELBO = -40.6595084573
+Iteration  11, ELBO = -39.2383473863
+Iteration  12, ELBO = -38.6794253982
+Iteration  13, ELBO = -38.4572975512
+Iteration  14, ELBO = -38.3725772737
+Iteration  15, ELBO = -38.3425363564
+Iteration  16, ELBO = -38.3325176974
+Iteration  17, ELBO = -38.3293114406
+Iteration  18, ELBO = -38.3283110015
+Iteration  19, ELBO = -38.3280034372
+Iteration  20, ELBO = -38.3279096809
+Iteration  21, ELBO = -38.3278812366
+Iteration  22, ELBO = -38.3278726298</code></pre>
+<pre class="r"><code>jj_fit &lt;- jj_log_reg(X, y, mu0, Sigma0, tol= 1e-5)</code></pre>
+<pre><code>
+Starting Jaakkola-Jordan optimisation:
+Iteration   1, ELBO = -137.1696439625
+Iteration   2, ELBO = -43.8110602922
+Iteration   3, ELBO = -38.9935822151
+Iteration   4, ELBO = -38.1997101065
+Iteration   5, ELBO = -38.0540172672
+Iteration   6, ELBO = -38.0274586404
+Iteration   7, ELBO = -38.0227440650
+Iteration   8, ELBO = -38.0219208719
+Iteration   9, ELBO = -38.0217782699
+Iteration  10, ELBO = -38.0217536531
+Iteration  11, ELBO = -38.0217494099</code></pre>
+<pre class="r"><code>sj_fit &lt;- sj_log_reg(X, y, mu0, Sigma0, tol= 1e-5, maxiter = 10)</code></pre>
+<pre><code>
+Starting Saul-Jordan optimisation:
+Iteration   1, ELBO = -532.6092716102
+Iteration   2, ELBO = -3074.0150499361
+Iteration   3, ELBO = -9060.7195618299
+Iteration   4, ELBO =  -Inf
+Iteration   5, ELBO = -11882.7451399044
+Iteration   6, ELBO = -9286.6484948503
+Iteration   7, ELBO = -12440.1807404176
+Iteration   8, ELBO = -11138.4037374864
+Iteration   9, ELBO = -14789.8026254242
+Iteration  10, ELBO = -13518.9146389380
+Iteration  11, ELBO = -16597.9913846932</code></pre>
+<pre class="r"><code>jj_sj_fit &lt;- sj_log_reg(X, y, mu0, Sigma0, tol= 1e-5, maxiter = 10, muinit = jj_fit$mu, Sigmainit = jj_fit$Sigma)</code></pre>
+<pre><code>
+Starting Saul-Jordan optimisation:
+Iteration   1, ELBO = -37.5931435978
+Iteration   2, ELBO = -37.5790440387
+Iteration   3, ELBO = -37.5780978548
+Iteration   4, ELBO = -37.5779489790
+Iteration   5, ELBO = -37.5779192108
+Iteration   6, ELBO = -37.5779124936</code></pre>
+</div>
+</div>
+<div id="summary" class="section level1">
+<h1>Summary</h1>
+<p>Bohning’s bound provides the weakest approximation of the three methods considered here. Evidence seems to suggest that the Jaakkola-Jordan updates are a more stable approximation but less accurate, whereas Saul-Jordan provides a tighter bound but may diverge in instances of high correlation between the posterior parameters or diffuse priors. A usual recommendation is to initialise with Jaakkola-Jordan updates until convergence or some number of iterations are completed, and then switch to using Saul-Jordan updates to improve the bound.</p>
+<p>In a future post I aim to look at the use of quadrature rules to calculate the expectation directly rather using approximation bounds.</p>
+</div>
+<div id="useful-identities" class="section level1">
+<h1>Useful Identities</h1>
+<p><span class="math display">\[
+\begin{aligned}
+\text{expit}(x) &amp;= \frac{1}{2} + \frac{\tanh(x/2)}{2} \\
+\frac{d}{dx} \ln\left(1+e^{f(x)}\right) &amp;= f^\prime(x)\text{expit}\left(f(x)\right)\\
+\frac{d}{dx} \text{expit}\left(f(x)\right) &amp;= \frac{f^\prime(x)}{2\left(1 + \cosh\left(f(x)\right)\right)}\\
+x^\top A x=\text{tr}(x^\top A x) = \text{tr}(Axx^\top)&amp;\implies\mathbb E[x^\top A x] = \text{tr}\left(\mathbb E[xx^\top]A\right)=\text{tr}(A\mathbb V[x])+\mathbb E[x]^\top A\mathbb E[x]
+\end{aligned}
+\]</span></p>
+<hr />
+</div>
+<div id="references" class="section level1 unnumbered">
+<h1>References</h1>
+<div id="refs" class="references">
+<div id="ref-bohning1992multinomial">
+<p>Böhning, Dankmar. 1992. “Multinomial Logistic Regression Algorithm.” <em>Annals of the Institute of Statistical Mathematics</em> 44 (1): 197–200.</p>
+</div>
+<div id="ref-bohning1988monotonicity">
+<p>Böhning, Dankmar, and Bruce G Lindsay. 1988. “Monotonicity of Quadratic-Approximation Algorithms.” <em>Annals of the Institute of Statistical Mathematics</em> 40 (4): 641–63.</p>
+</div>
+<div id="ref-durante2017conditionally">
+<p>Durante, Daniele, and Tommaso Rigon. 2017. “Conditionally Conjugate Mean-Field Variational Bayes for Logistic Models.” <em>arXiv Preprint arXiv:1711.06999</em>.</p>
+</div>
+<div id="ref-jaakkola2000">
+<p>Jaakkola, Tommi S, and Michael I Jordan. 2000. “Bayesian Parameter Estimation via Variational Methods.” <em>Statistics and Computing</em> 10 (1): 25–37.</p>
+</div>
+<div id="ref-murphy2012machine">
+<p>Murphy, Kevin P. 2012. <em>Machine Learning: A Probabilistic Perspective</em>. MIT press.</p>
+</div>
+<div id="ref-nolan2017">
+<p>Nolan, Tui H, and Matt P Wand. 2017. “Accurate Logistic Variational Message Passing: Algebraic and Numerical Details.” <em>Stat</em> 6 (1): 102–12.</p>
+</div>
+<div id="ref-polson2013bayesian">
+<p>Polson, Nicholas G, James G Scott, and Jesse Windle. 2013. “Bayesian Inference for Logistic Models Using Pólya–Gamma Latent Variables.” <em>Journal of the American Statistical Association</em> 108 (504): 1339–49.</p>
+</div>
+<div id="ref-rhode2016">
+<p>Rhode, David, and Matt P. Wand. 2016. “Semiparametric Mean Field Variational Bayes: General Principles and Numerical Issues.” <em>Journal of Machine Learning Research</em> 17: 1–47.</p>
+</div>
+<div id="ref-wand2017fast">
+<p>Wand, Matt P. 2017. “Fast Approximate Inference for Arbitrarily Large Semiparametric Regression Models via Message Passing.” <em>Journal of the American Statistical Association</em> 112 (517): 137–68.</p>
+</div>
+</div>
+</div>
+
+  </div>
+
+  <div id=links>
+    
+      <a class="basic-alignment left" href="https://jatotterdell.github.io/post/2019/05/15/linear-regression-variational-approximation/">&laquo; Linear Regression Variational Approximation</a>
+    
+    
+      <a class="basic-alignment left" href="https://jatotterdell.github.io/post/2019/06/04/prior-coding-effects/">Prior Coding Effects &raquo;</a>
+    
+  </div>
+</section>
+
+<section id="comments">
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+
+(function() {
+      
+      
+      if (window.location.hostname == "localhost")
+                return;
+
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      var disqus_shortname = '';
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</section>
+
+
+  
+  
+<script src="https://jatotterdell.github.io/js/math-code.js"></script>
+<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+<script src="//cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="//cdn.bootcss.com/highlight.js/9.12.0/languages/r.min.js"></script>
+
+ <script>
+hljs.configure({languages: []});
+hljs.initHighlightingOnLoad();
+</script>
+
+<script type="text/x-mathjax-config"> 
+    MathJax.Hub.Config({ 
+        "HTML-CSS": { scale: 95, linebreaks: { automatic: true } }, 
+        SVG: { linebreaks: { automatic:true } }, 
+        // displayAlign: "left" 
+        });
+</script>
+
+</body>
+</html>
+

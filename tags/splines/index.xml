@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>splines on James Totterdell</title>
+    <link>https://jatotterdell.github.io/tags/splines/</link>
+    <description>Recent content in splines on James Totterdell</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Thu, 11 Apr 2019 00:00:00 +0000</lastBuildDate><atom:link href="https://jatotterdell.github.io/tags/splines/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Semiparametric baseline hazard using monotone splines</title>
+      <link>https://jatotterdell.github.io/post/2019/04/11/semiparametric-baseline-hazard-using-monotone-splines/</link>
+      <pubDate>Thu, 11 Apr 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/post/2019/04/11/semiparametric-baseline-hazard-using-monotone-splines/</guid>
+      <description>Background I had been following a conversation on the Stan discourse about implementing flexible survival models in Stan. A common thread of the discussions was the use of monotone splines (M-splines) and their corresponding integrated splines (I-splines) as a semi-parametric model for the baseline cumulative hazard (or baseline log-cumulative hazard).
+I have previously encountered the paper by (Ramsay and others 1988) whilst reading about spline extensions to the self-controlled case series (SCCS) method, but did not have much time to get into the details.</description>
+    </item>
+    
+  </channel>
+</rss>

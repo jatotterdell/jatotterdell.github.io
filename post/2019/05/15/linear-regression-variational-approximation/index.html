@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  
+
+  <link rel="icon" type="image/png" href="https://jatotterdell.github.io/favicon.png">
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/github-gist.css" rel="stylesheet" id="theme-stylesheet">
+  <script src="https://jatotterdell.github.io/js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+  <title>
+    
+    
+     Linear Regression Variational Approximation 
+    
+  </title>
+  <link rel="canonical" href="https://jatotterdell.github.io/post/2019/05/15/linear-regression-variational-approximation/">
+
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/fonts.css" />
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/style.css" />
+
+  
+</head>
+
+<body>
+<section id=nav>
+  <h1><a href="https://jatotterdell.github.io/">James Totterdell</a></h1>
+  <ul>
+    
+    <li><a href="https://jatotterdell.github.io/">Home</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/about/">About</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/categories/">Categories</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/tags/">Tags</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/quotes/">Quotes</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/index.xml">RSS</a></li>
+    
+  </ul>
+</section>
+
+
+<section id=content>
+  <h1> Linear Regression Variational Approximation </h1>
+
+  <div id=sub-header>
+    James Totterdell · 2019-05-15
+  </div>
+
+  <div class="entry-content">
+    
+
+
+<p>For reference, a derivation of a variational approximation for linear regression following <span class="citation">(Ormerod <a href="#ref-ormerod2008semiparametric" role="doc-biblioref">2008</a>)</span> and <span class="citation">(Ormerod and Wand <a href="#ref-ormerod2010" role="doc-biblioref">2010</a>)</span>.</p>
+<p>Recall the evidence lower bound is given by
+<span class="math display">\[
+\begin{aligned}
+\ln p(y|\theta) &amp;\geq \mathcal{L}(y|\theta;q) \\
+&amp;= \mathbb E_q[\ln p(y,\theta) - \ln q(\theta)] \\
+&amp;= \mathbb E_q[\ln p(y|\theta)] + \mathbb E_q[\ln p(\theta)] + \mathbb H_q[\theta].
+\end{aligned}
+\]</span></p>
+<p>The model we are interested in is
+<span class="math display">\[
+\begin{aligned}
+y|\beta,\sigma^2 &amp;\sim N(X\beta, \sigma^2 I_n) \\
+\beta &amp;\sim N(\mu_0,\Sigma_0) \\
+\sigma^2 &amp;\sim IG(a_0, b_0).
+\end{aligned}
+\]</span></p>
+<p>Suppose we specify a parametric approximating density <span class="math inline">\(q(\beta,\sigma^2;\xi) = q(\beta;\xi_\beta)q(\sigma^2;\xi_\sigma)\)</span> where
+<span class="math display">\[
+\begin{aligned}
+q(\beta;\xi_\beta) &amp;= N(\beta|\mu_\beta, \Sigma_\beta) \\
+q(\sigma^2;\xi_\sigma) &amp;= IG(\sigma^2|a_{\sigma^2}, b_{\sigma^2}).
+\end{aligned}
+\]</span></p>
+<p>We then have the following lower bound
+<span class="math display">\[
+\mathcal{L}(y|\theta;q) = \mathbb E_q[\ln p(y|\beta,\sigma^2)] + \mathbb E_q[\ln p(\beta)] + \mathbb E_q[\ln p(\sigma^2)] + \mathbb H_q[\beta] + \mathbb H_q[\sigma^2].
+\]</span></p>
+<p>The components are
+<span class="math display">\[
+\begin{aligned}
+  \mathbb E_q[\ln p(y|\beta,\sigma^2)] &amp;= -\frac{1}{2}\left\{n\ln(2\pi) + \mathbb E_q[\ln\sigma^2] + \mathbb E_q[\sigma^{-2}]\mathbb E_q[(y - X\beta)^\top(y - X\beta)]\right\} \\
+  &amp;= -\frac{1}{2}\left\{n\ln(2\pi) - \ln(b_{\sigma^2}) + \psi(a_{\sigma^2}) + \frac{a_{\sigma^2}}{b_{\sigma^2}}\left[(y-X\mu_\beta)^\top(y-X\mu_\beta)+\text{tr}(X^\top X\Sigma_\beta)\right]\right\}\\
+  \mathbb E_q[\ln p(\beta)] &amp;= -\frac{1}{2}\left\{d\ln(2\pi) + \ln|\Sigma_0| + \mathbb E[(\beta - \mu_0)^\top\Sigma_0^{-1}(\beta-\mu_0)]\right\}\\
+  &amp;= -\frac{1}{2}\left\{d\ln(2\pi)+\ln|\Sigma_0| + (\mu_\beta-\mu_0)^\top\Sigma_0^{-1}(\mu_\beta-\mu_0) + \text{tr}(\Sigma_0^{-1}\Sigma_\beta)\right\} \\
+  \mathbb E_q[\ln p(\sigma^2)] &amp;= a_0\ln(b_0)-\ln\Gamma(a_0)+(a_0+1)\mathbb E_q[\ln(\sigma^{-2})] - b_0\mathbb E_q[\sigma^{-2}] \\
+  &amp;= a_0\ln(b_0)-\ln\Gamma(a_0)-(a_0+1)(\ln(b_{\sigma^2}) - \psi(a_{\sigma^2}))- b_0\frac{a_{\sigma^2}}{b_{\sigma^2}} \\
+  \mathbb H_q[\beta] &amp;= \frac{1}{2}\left[d(1 + \ln(2\pi)) + \ln|\Sigma_\beta|\right]\\
+  \mathbb H_q[\sigma^2] &amp;= a_{\sigma^2} + \ln(b_{\sigma^2}) + \ln\Gamma(a_{\sigma^2}) - (a_{\sigma^2} + 1)\psi(a_{\sigma^2})
+\end{aligned}
+\]</span></p>
+<p>where we have used the following identities</p>
+<p><span class="math display">\[
+\begin{aligned}
+\mathbb E_q[\beta^\top\Sigma_0^{-1}\beta] &amp;= \mu_\beta\Sigma_0^{-1}\mu_\beta + \text{tr}\left(\Sigma_0^{-1}\Sigma\right)\quad\text{(quadratic form)}\\
+\mathbb E_q[\sigma^{-2}] &amp;= \frac{a_{\sigma^2}}{b_{\sigma^2}} \quad \text{(expectation of gamma r.v)}\\
+\mathbb E_q[\ln(\sigma^{-2})] &amp;= \ln(b_{\sigma^2}) - \psi(a_{\sigma^2}) \quad\text{(expectation of log gamma r.v.)}.
+\end{aligned}
+\]</span></p>
+<p>For optimisation, the derivatives are
+<span class="math display">\[
+\begin{aligned}
+D_{\mu_\beta}\mathcal{L}(y|\theta;q) &amp;= -\frac{1}{2}\left(\frac{a_{\sigma^2}}{b_{\sigma^2}}X^\top(y - X\mu_\beta) - \Sigma^{-1}_0(\mu_\beta-\mu_0)\right) \\
+D_{\Sigma_\beta}\mathcal{L}(y|\theta;q) &amp;= -\frac{1}{2}\left(\frac{a_{\sigma^2}}{b_{\sigma^2}}X^\top X + \Sigma_0^{-1} - \Sigma_\beta^{-1}\right)\\ 
+D_{a_{\sigma^2}}\mathcal{L}(y|\theta;q) &amp;= 1 + \left(a_0 + n/2 - a_{\sigma^2}\right)\psi^\prime(a_{\sigma^2}) - \frac{1}{b_{\sigma^2}}\left(b_0 + \frac{(y - X\mu_\beta)^\top(y - X\mu_\beta) + \text{tr}(X^\top X\Sigma)}{2}\right)\\
+D_{b_{\sigma^2}}\mathcal{L}(y|\theta;q) &amp;= \left(b_0 + \frac{(y-X\mu_\beta)^\top(y-X\mu_\beta) + \text{tr}(X^\top X \Sigma)}{2}\right)\frac{a_{\sigma^2}}{b_{\sigma^2}^2} - \frac{\left(a_0 + \frac{n}{2}\right)}{b_{\sigma^2}}
+\end{aligned}
+\]</span>
+using
+<span class="math display">\[
+\begin{aligned}
+D_X \ln|X| &amp;= (X^{-1})^\top\\
+D_X \text{tr}(AXB) &amp;= A^\top B^\top
+\end{aligned}
+\]</span></p>
+<p>This results in fixed-point updates
+<span class="math display">\[
+\begin{cases}
+\Sigma_\beta \leftarrow \left(\frac{a_{\sigma^2}}{b_{\sigma^2}}X^\top X + \Sigma_0^{-1}\right)^{-1}\\
+\mu_\beta \leftarrow \Sigma\left(\frac{a_{\sigma^2}}{b_{\sigma^2}}X^\top y + \Sigma_0^{-1}\mu_0\right)\\
+a_{\sigma^2} \leftarrow a_0 + \frac{n}{2} \\
+b_{\sigma^2} \leftarrow b_0 + \frac{(y-X\mu_\beta)^\top(y-X\mu_\beta) + \text{tr}(X^\top X \Sigma)}{2}
+\end{cases}
+\]</span></p>
+<div id="example" class="section level1">
+<h1>Example</h1>
+<p>An <code>R</code> implementation and comparisons with results from <code>Stan</code> are given below.</p>
+<pre class="r"><code># Entropy for multivariate normal
+mvn_ent &lt;- function(Sigma) {
+  (ncol(Sigma)*(1 + log(2*pi)) + log(det(Sigma)))/2
+}
+
+# Entropy for inverse gamma
+ig_ent &lt;- function(a, b) {
+  a + log(b) + lgamma(a) - (a + 1)*digamma(a)
+}
+
+# VB for linear regression model
+vb_lin_reg &lt;- function(
+  X, y, 
+  mu0 = rep(0, ncol(X)), Sigma0 = diag(10, ncol(X)), 
+  a0 = 1e-2, b0 = 1e-2, 
+  maxiter = 100, tol = 1e-5, verbose = TRUE) {
+  
+  d &lt;- ncol(X)
+  n &lt;- nrow(X)
+  invSigma0 &lt;- solve(Sigma0)
+  invSigma0_x_mu0 &lt;- invSigma0 %*% mu0
+  XtX &lt;- crossprod(X)
+  Xty &lt;- crossprod(X, y)
+  mu &lt;- mu0
+  Sigma &lt;- Sigma0
+  a &lt;- a0 + n / 2
+  b &lt;- b0
+  lb &lt;- as.numeric(maxiter)
+  i &lt;- 0
+  converged &lt;- FALSE
+  while(i &lt;= maxiter &amp; !converged) {
+    i &lt;- i + 1
+    a_div_b &lt;- a / b
+    
+    Sigma &lt;- solve(a_div_b * XtX + invSigma0)
+    mu &lt;- Sigma %*% (a_div_b * Xty + invSigma0_x_mu0)
+    y_m_Xmu &lt;- y - X %*% mu
+    b &lt;- b0 + 0.5*(crossprod(y_m_Xmu) + sum(diag(Sigma %*% XtX)))[1]
+    
+    # Calculate L(q)
+    lb[i] &lt;- mvn_ent(Sigma) + ig_ent(a, b) +
+      a0 * log(b0) - lgamma(a0) - (a0 + 1) * (log(b) - digamma(a)) - b0 * a / b -
+      0.5*(d * log(2*pi) + log(det(Sigma0)) + crossprod(mu - mu0, Sigma0 %*% (mu - mu0)) + sum(diag(invSigma0 %*% Sigma))) -
+      0.5*(n * log(2*pi) - log(b) + digamma(a) + a / b * (crossprod(y_m_Xmu) + sum(diag(XtX %*% Sigma))))
+    
+    if(verbose) cat(sprintf(&quot;Iteration %3d, ELBO = %5.10f\n&quot;, i, lb[i]))
+    if(i &gt; 1 &amp;&amp; abs(lb[i] - lb[i - 1]) &lt; tol) converged &lt;- TRUE
+  }
+  return(list(lb = lb[1:i], mu = mu, Sigma = Sigma, a = a, b = b))
+}</code></pre>
+<pre class="stan"><code>// lin_reg
+data {
+  int&lt;lower=1&gt; n;
+  int&lt;lower=1&gt; d;
+  real y[n];
+  matrix[n, d] X;
+  vector[d] mu0;
+  matrix[d, d] Sigma0;
+  real&lt;lower=0&gt; a0;
+  real&lt;lower=0&gt; b0;
+}
+
+parameters {
+  vector[d] beta;
+  real sigmasq;
+}
+
+model {
+  real sigma = sqrt(sigmasq);
+  sigmasq ~ inv_gamma(a0, b0);
+  beta ~ multi_normal(mu0, Sigma0);
+  y ~ normal(X * beta, sigma);
+}</code></pre>
+<pre class="r"><code>library(rstan)
+library(MCMCpack)
+
+n &lt;- 50
+beta &lt;- c(1, 2, 3)
+sigma &lt;- 0.5
+x1 &lt;- runif(n)
+x2 &lt;- sample(c(0, 1), n, replace = T)
+X &lt;- cbind(1, x1, x2)
+y &lt;- drop(X%*%beta + rnorm(n, 0, sigma))
+D &lt;- data.frame(x1 = x1, x2 = x2, y = y)
+mu0 &lt;- rep(0, length(beta))
+Sigma0 &lt;- diag(1, length(beta))
+a0 &lt;- 1e-2
+b0 &lt;- 1e-2
+
+vb_fit &lt;- vb_lin_reg(X, y, mu0 = mu0, Sigma0 = Sigma0, a0 = a0, b0 = b0, tol = 1e-8)</code></pre>
+<pre><code>Iteration   1, ELBO = -97.3262155814
+Iteration   2, ELBO = -87.2253181794
+Iteration   3, ELBO = -87.1217605969
+Iteration   4, ELBO = -87.1151041597
+Iteration   5, ELBO = -87.1146632789
+Iteration   6, ELBO = -87.1146340212
+Iteration   7, ELBO = -87.1146320794
+Iteration   8, ELBO = -87.1146319505
+Iteration   9, ELBO = -87.1146319419</code></pre>
+<pre class="r"><code>mc_fit &lt;- sampling(lin_reg, refresh = 0, iter = 1e4,
+  data = list(n = n, d = 3, X = X, y = y, mu0 = mu0, Sigma0 = Sigma0, a0 = a0, b0 = b0))
+draws &lt;- as.matrix(mc_fit)</code></pre>
+<div class="figure"><span id="fig:unnamed-chunk-3"></span>
+<img src="https://jatotterdell.github.io/post/2019-05-15-linear-regression-variational-approximation_files/figure-html/unnamed-chunk-3-1.png" alt="Comparison of variational and HMC posterior densities." width="672" />
+<p class="caption">
+Figure 1: Comparison of variational and HMC posterior densities.
+</p>
+</div>
+<p>Same data under a different prior.</p>
+<pre class="r"><code>mu0 &lt;- rep(10, length(beta))
+Sigma0 &lt;- diag(0.1, length(beta))
+a0 &lt;- 1e-2
+b0 &lt;- 1e-2
+
+vb_fit &lt;- vb_lin_reg(X, y, mu0 = mu0, Sigma0 = Sigma0, a0 = a0, b0 = b0, tol = 1e-8)</code></pre>
+<pre><code>Iteration   1, ELBO = -96.6398329245
+Iteration   2, ELBO = -86.0777933979
+Iteration   3, ELBO = -83.4850550434
+Iteration   4, ELBO = -78.8496581897
+Iteration   5, ELBO = -73.7360282502
+Iteration   6, ELBO = -73.0800738730
+Iteration   7, ELBO = -73.0558414617
+Iteration   8, ELBO = -73.0545704858
+Iteration   9, ELBO = -73.0544993784
+Iteration  10, ELBO = -73.0544953843
+Iteration  11, ELBO = -73.0544951599
+Iteration  12, ELBO = -73.0544951473
+Iteration  13, ELBO = -73.0544951465</code></pre>
+<pre class="r"><code>mc_fit &lt;- sampling(lin_reg, refresh = 0, iter = 1e4,
+  data = list(n = n, d = 3, X = X, y = y, mu0 = mu0, Sigma0 = Sigma0, a0 = a0, b0 = b0))
+draws &lt;- as.matrix(mc_fit)</code></pre>
+<div class="figure"><span id="fig:unnamed-chunk-4"></span>
+<img src="https://jatotterdell.github.io/post/2019-05-15-linear-regression-variational-approximation_files/figure-html/unnamed-chunk-4-1.png" alt="Comparison of variational and HMC posterior densities under strongly informative prior." width="672" />
+<p class="caption">
+Figure 2: Comparison of variational and HMC posterior densities under strongly informative prior.
+</p>
+</div>
+<hr />
+</div>
+<div id="references" class="section level1 unnumbered">
+<h1>References</h1>
+<div id="refs" class="references">
+<div id="ref-ormerod2008semiparametric">
+<p>Ormerod, John T. 2008. “On Semiparametric Regression and Data Mining.” <em>Ph. D. Thesis</em>. School of Mathematics; Statistics, The University of New South Wales.</p>
+</div>
+<div id="ref-ormerod2010">
+<p>Ormerod, John T., and Matt P. Wand. 2010. “Explaining Variational Approximations.” <em>The American Statistician</em> 64 (2): 140–53.</p>
+</div>
+</div>
+</div>
+
+  </div>
+
+  <div id=links>
+    
+      <a class="basic-alignment left" href="https://jatotterdell.github.io/post/2019/05/08/affine-transformation-multivariate-normal-probabilities/">&laquo; Multivariate Normal Probability that Margin is Maximum</a>
+    
+    
+      <a class="basic-alignment left" href="https://jatotterdell.github.io/post/2019/05/25/logistic-regression-variational-approximation/">Logistic Regression Variational Approximation - I &raquo;</a>
+    
+  </div>
+</section>
+
+<section id="comments">
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+
+(function() {
+      
+      
+      if (window.location.hostname == "localhost")
+                return;
+
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      var disqus_shortname = '';
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</section>
+
+
+  
+  
+<script src="https://jatotterdell.github.io/js/math-code.js"></script>
+<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+<script src="//cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="//cdn.bootcss.com/highlight.js/9.12.0/languages/r.min.js"></script>
+
+ <script>
+hljs.configure({languages: []});
+hljs.initHighlightingOnLoad();
+</script>
+
+<script type="text/x-mathjax-config"> 
+    MathJax.Hub.Config({ 
+        "HTML-CSS": { scale: 95, linebreaks: { automatic: true } }, 
+        SVG: { linebreaks: { automatic:true } }, 
+        // displayAlign: "left" 
+        });
+</script>
+
+</body>
+</html>
+

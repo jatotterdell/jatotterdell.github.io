@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>linear regression on James Totterdell</title>
+    <link>https://jatotterdell.github.io/categories/linear-regression/</link>
+    <description>Recent content in linear regression on James Totterdell</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Wed, 15 May 2019 00:00:00 +0000</lastBuildDate><atom:link href="https://jatotterdell.github.io/categories/linear-regression/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Linear Regression Variational Approximation</title>
+      <link>https://jatotterdell.github.io/post/2019/05/15/linear-regression-variational-approximation/</link>
+      <pubDate>Wed, 15 May 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/post/2019/05/15/linear-regression-variational-approximation/</guid>
+      <description>For reference, a derivation of a variational approximation for linear regression following (Ormerod 2008) and (Ormerod and Wand 2010).
+Recall the evidence lower bound is given by \[ \begin{aligned} \ln p(y|\theta) &amp;amp;\geq \mathcal{L}(y|\theta;q) \\ &amp;amp;= \mathbb E_q[\ln p(y,\theta) - \ln q(\theta)] \\ &amp;amp;= \mathbb E_q[\ln p(y|\theta)] + \mathbb E_q[\ln p(\theta)] + \mathbb H_q[\theta]. \end{aligned} \]
+The model we are interested in is \[ \begin{aligned} y|\beta,\sigma^2 &amp;amp;\sim N(X\beta, \sigma^2 I_n) \\ \beta &amp;amp;\sim N(\mu_0,\Sigma_0) \\ \sigma^2 &amp;amp;\sim IG(a_0, b_0).</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>anova on James Totterdell</title>
+    <link>https://jatotterdell.github.io/categories/anova/</link>
+    <description>Recent content in anova on James Totterdell</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Mon, 02 Sep 2019 00:00:00 +0000</lastBuildDate><atom:link href="https://jatotterdell.github.io/categories/anova/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Bayesian ANOVA Parameterisation</title>
+      <link>https://jatotterdell.github.io/post/2019/09/02/bayesian-anova-parameterisation/</link>
+      <pubDate>Mon, 02 Sep 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/post/2019/09/02/bayesian-anova-parameterisation/</guid>
+      <description>Background ANOVA methods are essentially about “batching” related model parameters to aid interpretability of the results (e.g. Gelman 2005). This batching is usually achieved by enforcing some kind of constraint on the parameters within the model. In classical inference, such constraints can be enforced in a number of ways and, to some extent, immaterially affect the inference due to the arbitrariness of the design matrix. However, in Bayesian inference, parameterisation determines our priors which influence our inferences.</description>
+    </item>
+    
+  </channel>
+</rss>

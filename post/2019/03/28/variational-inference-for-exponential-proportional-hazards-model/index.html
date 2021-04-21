@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  
+
+  <link rel="icon" type="image/png" href="https://jatotterdell.github.io/favicon.png">
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/github-gist.css" rel="stylesheet" id="theme-stylesheet">
+  <script src="https://jatotterdell.github.io/js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+  <title>
+    
+    
+     Variational Inference for Exponential Proportional Hazards Model 
+    
+  </title>
+  <link rel="canonical" href="https://jatotterdell.github.io/post/2019/03/28/variational-inference-for-exponential-proportional-hazards-model/">
+
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/fonts.css" />
+  <link rel="stylesheet" href="https://jatotterdell.github.io/css/style.css" />
+
+  
+</head>
+
+<body>
+<section id=nav>
+  <h1><a href="https://jatotterdell.github.io/">James Totterdell</a></h1>
+  <ul>
+    
+    <li><a href="https://jatotterdell.github.io/">Home</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/about/">About</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/categories/">Categories</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/tags/">Tags</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/quotes/">Quotes</a></li>
+    
+    <li><a href="https://jatotterdell.github.io/index.xml">RSS</a></li>
+    
+  </ul>
+</section>
+
+
+<section id=content>
+  <h1> Variational Inference for Exponential Proportional Hazards Model </h1>
+
+  <div id=sub-header>
+    James Totterdell · 2019-03-28
+  </div>
+
+  <div class="entry-content">
+    
+
+
+<div id="variational-approximations" class="section level2">
+<h2>Variational Approximations</h2>
+<p>Variational Bayes is an approximate Bayesian inference method based on choosing an approximating density from some restricted class of densities by minimising the Kullback-Leibler divergence
+<span class="math display">\[
+\text{KL}(p\vert\vert q) = \int_\Omega \log\frac{p(\theta)}{q(\theta)} p(\theta)d\theta.
+\]</span>
+In Bayesian inference, the density to be approximated is usually the posterior probability of some model parameter of interest
+<span class="math display">\[
+p(\theta|y) = \frac{p(\theta,y)}{p(y )},
+\]</span>
+and so the approximating density <span class="math inline">\(q\)</span> is chosen as
+<span class="math display">\[
+q^\star(\theta) = \underset{q\in\mathcal{Q}}{\text{argmin }} \text{KL}(q\lvert\rvert p).
+\]</span>
+It can be shown <span class="citation">(Ormerod and Wand <a href="#ref-ormerod2010" role="doc-biblioref">2010</a>)</span> that minimising the Kullback-Leibler divergence is equivalent to maximising a lower bound on the marginal likelihood
+<span class="math display">\[
+\begin{aligned}
+q^\star(\theta) &amp;= \underset{q\in\mathcal{Q}}{\text{argmax }}\mathcal{L}(q) \\
+\mathcal{L}(q) &amp;= \exp\left\{\int_\Omega \ln\left[\frac{p(y,\theta)}{q(\theta)}\right] q(\theta)d\theta\right\}
+\end{aligned}
+\]</span>
+Expanding the above we have
+<span class="math display">\[
+\begin{aligned}
+\ln \mathcal{L}(q) &amp;= \mathbb E_q[\ln p(y|\theta)] + \mathbb E_q[\ln p(\theta)] - \mathbb E_q[\ln q(\theta)] \\
+&amp;= \mathbb E_q[\ln p(y|\theta)] + \mathbb E_q[\ln p(\theta)] + \mathbb H[q]
+\end{aligned}
+\]</span>
+where <span class="math inline">\(\mathbb H[q]\)</span> denotes the <em>entropy</em> of <span class="math inline">\(q\)</span>.</p>
+<p><span class="citation">Rhode and Wand (<a href="#ref-rhode2016" role="doc-biblioref">2016</a>)</span> delineate between three class of variational approximation: parametric, nonparametric, and semiparametric.</p>
+<p>In parametric variational Bayes, the approximating class is restricted to some parametric family
+<span class="math display">\[
+\mathcal{Q} = \{q(\theta;\xi)|\xi\in\Xi\}.
+\]</span>
+In nonparametric variational Bayes, where the approximating class is not specified to belong to some parametric family, but only that it be factored into independent components (also known as mean-field variational Bayes)
+<span class="math display">\[
+\mathcal{Q} = \{q(\theta)|q(\theta) = q_1(\theta_1)\cdots q_M(\theta_M)\}.
+\]</span>
+Semiparametric variational Bayes is a compromise between the two, where some parts of the parameter space are constrained to have a specific parametric form, but others are unspecified
+<span class="math display">\[
+\mathcal{Q} = \{q(\theta)|q(\theta) = q(\theta_0;\xi)q_1(\theta_1)\cdots q_M(\theta_M),\xi\in\Xi\}.
+\]</span></p>
+Combining solutions to the parametric and nonparametric cases, <span class="citation">(Rhode and Wand <a href="#ref-rhode2016" role="doc-biblioref">2016</a>, Algorithm 1)</span> the general approach to optimising the <span class="math inline">\(q\)</span>-densities is given in Proposition <a href="#prp:alg">1</a>.
+
+<div class="proposition">
+<p><span id="prp:alg" class="proposition"><strong>Proposition 1  (Algorithm to optimise semiparametric variational Bayes density)  </strong></span>Initialise: <span class="math inline">\(q(\theta_1)\cdots q(\theta_M)\)</span></p>
+Cycle:
+<span class="math display">\[
+\begin{aligned}
+\xi &amp;\leftarrow \underset{\xi^\prime\in\Xi}{\text{argmax }} \left\{\ln \mathcal{L}(q,\xi^\prime)^{[\theta_0]}\right\} \\
+q(\theta_1) &amp;\leftarrow \frac{\exp\left\{\mathbb E_{q(\theta_{-1})}[\ln p(y,\theta)]\right\}}{\int \exp\left\{\mathbb E_{q(\theta_{-1})}[\ln p(y,\theta)]\right\}d\theta_1} \\
+&amp;\vdots \\
+q(\theta_M) &amp;\leftarrow \frac{\exp\left\{\mathbb E_{q(\theta_{-M})}[\ln p(y,\theta)]\right\}}{\int \exp\left\{\mathbb E_{q(\theta_{-M})}[\ln p(y,\theta)]\right\}d\theta_M} 
+\end{aligned}
+\]</span>
+unti convergence of <span class="math inline">\(\mathcal{L}(q,\xi)\)</span>.
+</div>
+
+<p>In Proposition <a href="#prp:alg">1</a>, <span class="math inline">\(\mathcal{L}(q,\xi^\prime)^{[\theta_0]}\)</span> is the <span class="math inline">\(\theta_0\)</span>-localised component of the marginal likelihood lower bound.</p>
+Further, if one specifies <span class="math inline">\(q(\theta_0;\xi) = N(\theta_0;\mu_q, \Sigma_q)\)</span> then the optimisation scheme in step one follows the natural fixed-point iterations given in Proposition <a href="#prp:fpi">2</a> <span class="citation">(Rhode and Wand <a href="#ref-rhode2016" role="doc-biblioref">2016</a>, Result 2)</span>.
+
+<div class="proposition">
+<span id="prp:fpi" class="proposition"><strong>Proposition 2  (Multivariate normal fixed-point scheme)  </strong></span><span class="math display">\[
+\begin{cases}
+\omega_q \leftarrow \mathsf{D}_{\mu_q}\text{NonEntropy}(q; \mu_q,\Sigma_q)^\top \\
+\Sigma_q \leftarrow -\left[\mathsf{H}_{\mu_q}\text{NonEntropy}(q;\mu_q,\Sigma_q)\right]^{-1}\\
+\mu_q \leftarrow \mu_q + \Sigma_q\omega_q.
+\end{cases}
+\]</span>
+</div>
+
+</div>
+<div id="exponential-proportional-hazards-model" class="section level2">
+<h2>Exponential Proportional Hazards Model</h2>
+<p>As an exercise, I now apply the above results to the parametric proportional hazards model assuming exponential density (constant hazard) and right-censoring. Suppose we specify an exponential regression model <span class="math inline">\(f(y_i) = \exp(x_i^\top\beta)\)</span> where <span class="math inline">\(\beta_0 = \ln\lambda\)</span> the baseline hazard.</p>
+<p>Suppose that <span class="math inline">\(y_{1:n}\)</span> are survival times subject to right-censoring as indicated by <span class="math inline">\(\nu_{1:n}\)</span>. We specify the model the complete model
+<span class="math display">\[
+\begin{aligned}
+  p(\beta) &amp;= N(\theta|\mu_0,\Sigma_0) \\
+  \ln p(\beta) &amp;= -\frac{d}{2}\ln(2\pi) - \frac{1}{2}\ln|\Sigma_0| - \frac{1}{2}(\beta - \mu_0)^\top\Sigma_0^{-1}(\beta-\mu_0)\\
+  p(y_i|\beta;\nu_{1:n}) &amp;= \prod_{i=1}^n \exp(x_i^\top\beta)^{\nu_i}\exp(-y_i\exp(x_i^\top\beta))\\
+  \ln p(y|\beta;\nu) &amp;= v^\top X\beta - y^\top\exp(X\beta) \\
+  \ln p(\beta|y;\nu) &amp;= k+v^\top X\beta - y^\top\exp(X\beta) -\frac{1}{2}\ln|\Sigma_0| - \frac{1}{2}(\beta - \mu_0)^\top\Sigma_0^{-1}(\beta-\mu_0)
+\end{aligned}
+\]</span>
+for some constant <span class="math inline">\(k\)</span>.</p>
+<p>Suppose we specify the approximating class <span class="math inline">\(\mathcal{Q} = \{q(\beta)|q(\beta;\xi) = N(\beta|\mu_\beta,\Sigma_\beta)\}\)</span>, then this is parametric variational inference. We know the multivariate normal distribution has entropy
+<span class="math display">\[
+\mathbb H[q] = \frac{1}{2}d[1 + \ln(2\pi)] + \frac{1}{2}\ln|\Sigma_q|.
+\]</span></p>
+<p>Also,
+<span class="math display">\[
+\begin{aligned}
+\mathbb E_q[\ln p(\beta)] &amp;= -\frac{d}{2}\ln(2\pi) -\frac{1}{2}|\Sigma_0| - \frac{1}{2}\mathbb E_q[(\beta-\mu_0)^\top\Sigma_0^{-1}(\beta-\mu_0)] \\
+&amp;= -\frac{d}{2}\ln(2\pi) -\frac{1}{2}|\Sigma_0| - \frac{1}{2}\mathbb E_q[\beta-\mu_0]^\top\Sigma_0^{-1}\mathbb E[\beta-\mu_0] - \frac{1}{2}\text{tr}\left[\Sigma_0^{-1}\mathbb V_q(\beta-\mu_0)\right] \\
+&amp;= -\frac{d}{2}\ln(2\pi) -\frac{1}{2}|\Sigma_0| - \frac{1}{2}(\mu_q-\mu_0)^\top\Sigma_0^{-1}(\mu_q-\mu_0) - \text{tr}(\Sigma_0^{-1}\Sigma_q)
+\end{aligned}
+\]</span>
+where we have used the fact <span class="math inline">\(\mathbb E[X^\top A X] = \mu^\top A\mu + \text{tr}(A\Sigma)\)</span>.</p>
+<p>Finally,
+<span class="math display">\[
+\begin{aligned}
+\mathbb E_q[\ln p(y|\beta;\nu)] &amp;= \nu^\top X\mathbb E_q[\beta] - y^\top\mathbb E_q[e^{X\beta}] \\
+&amp;= \nu^\top X\mu_q - y^\top e^{X\mu_q + \text{diag}(X\Sigma_q X^\top)/2}
+\end{aligned}
+\]</span>
+using the fact that if <span class="math inline">\(X\sim N(\mu, \Sigma)\)</span> then <span class="math inline">\(\mathbb E[e^X] = e^{\mu + \text{diag}(\Sigma)/2}\)</span>.</p>
+<p>To obtain the fixed-point updates we need to differentiate the relevant expressions.
+<span class="math display">\[
+\begin{aligned}
+\mathsf{D}_{\mu_q}\left(\mathcal{L}(q;\mu_q,\Sigma_q)^{[\beta]}\right) &amp;= \nu^\top X-y^\top e^{X\mu_q + \text{diag}(X\Sigma_q X^\top)/2}X - \Sigma_0^{-1}(\mu_q - \mu_0) \\
+&amp;= X^\top\left(\nu - y\odot e^{X\mu_q + \text{diag}(X\Sigma_0 X^\top)/2}\right) - \Sigma_0^{-1}(\mu_q - \mu_0)\\
+\mathsf{H}_{\mu_q}\left(\mathcal{L}(q;\mu_q,\Sigma_q)^{[\beta]}\right) &amp;= -X^\top\text{diag}\left(y\odot e^{X\mu_q + \text{diag}(X\Sigma_0 X^\top)/2}\right)X - \Sigma_0^{-1}.
+\end{aligned}
+\]</span>
+Now we have the fixed-point updates to find <span class="math inline">\(\underset{\xi\in \Xi}{\text{argmax }} \mathcal{L}(q;\mu_q,\Sigma_q)\)</span>
+<span class="math display">\[
+\begin{cases}
+\omega_q \leftarrow y \odot e^{X\mu_q + \text{diag}(X\Sigma_q X)/2}\\
+\Sigma_q \leftarrow \left(X^\top\text{diag}(\omega_q)X + \Sigma_0^{-1}\right)^{-1}\\
+\mu_q \leftarrow \mu_q + \Sigma_q\left(X^\top(\nu - \omega_q) - \Sigma_0^{-1}(\mu_q - \mu_0)\right).
+\end{cases}
+\]</span></p>
+</div>
+<div id="example" class="section level2">
+<h2>Example</h2>
+<p>The above algorithm is implemented below and compared to results from estimation of the same model in Stan.</p>
+<pre class="r"><code># Entropy for multivariate normal
+mvn_ent &lt;- function(Sigma) {
+  (ncol(Sigma)*(1 + log(2*pi)) + log(det(Sigma)))/2
+}
+
+# VB for PH Exponential
+ph_exp_vb &lt;- function(X, y, v, mu0, Sigma0, maxiter = 100, tol = 1e-5, verbose = FALSE) {
+  d &lt;- ncol(X)
+  invSigma0 &lt;- solve(Sigma0)
+  mu &lt;- mu0
+  Sigma &lt;- Sigma0
+  lb &lt;- as.numeric(maxiter)
+  i &lt;- 0
+  converged &lt;- FALSE
+  while(i &lt;= maxiter &amp; !converged) {
+    i &lt;- i + 1
+    omega &lt;- y * exp(X %*% mu + diag(tcrossprod(X %*% Sigma, X))/2)[, 1]
+    Sigma &lt;- solve(crossprod(X, diag(omega) %*% X) + invSigma0)
+    mu &lt;- mu + Sigma %*% (crossprod(X, v - omega) - invSigma0 %*% (mu - mu0))
+    
+    # Calculate L(q)
+    Xmu &lt;- X %*% mu
+    lb[i] &lt;- mvn_ent(Sigma) + 
+      crossprod(v, Xmu) - crossprod(y, exp(Xmu + diag(tcrossprod(X %*% Sigma, X))/2)) -
+      d*log(det(Sigma0))/2 - 
+      crossprod(mu - mu0, invSigma0 %*% (mu - mu0))/2 -
+      sum(diag(invSigma0 %*% Sigma))/2
+    if(verbose) cat(&quot;Iteration &quot;, i, &quot;ELBO = &quot;, lb[i], &quot;\n&quot;)
+    if(i &gt; 1 &amp;&amp; abs(lb[i] - lb[i - 1]) &lt; tol) converged &lt;- TRUE
+  }
+  return(list(lb = lb[1:i], mu = mu, Sigma = Sigma))
+}</code></pre>
+<pre class="stan"><code>// Stan model for PH Exponential (ph_exp_stan)
+data {
+  int&lt;lower=1&gt; N;
+  int&lt;lower=0&gt; K;
+  vector[N] y;
+  int v[N];
+  matrix[N, K] X;
+  vector[K] mu0;
+  matrix[K, K] Sigma0;
+}
+parameters {
+  vector[K] beta;
+}
+model {
+  vector[N] eta = X*beta;
+  beta ~ multi_normal(mu0, Sigma0);
+  for(n in 1:N) {
+    if (v[n] == 1)
+      y[n] ~ exponential(exp(eta[n]));
+    else
+      target += exponential_lccdf(y[n] | exp(eta[n]));
+  }
+}
+</code></pre>
+<pre class="r"><code>library(rstan)
+set.seed(4231)
+X &lt;- cbind(1, rep(c(0, 1), each = 100))
+b &lt;- c(log(1/35), 5)
+y &lt;- yu &lt;- rexp(nrow(X), exp(X %*% b))
+v &lt;- 1 - as.numeric(yu &gt; 15)
+y[v == 0] &lt;- 15
+mu0 &lt;- c(0, 0)
+Sigma0 &lt;- diag(2)
+
+vb_fit &lt;- ph_exp_vb(X, y, v, mu0, Sigma0, verbose = TRUE)</code></pre>
+<pre><code>Iteration  1 ELBO =  -484.1595 
+Iteration  2 ELBO =  -237.9834 
+Iteration  3 ELBO =  -153.1951 
+Iteration  4 ELBO =  -139.9239 
+Iteration  5 ELBO =  -139.0202 
+Iteration  6 ELBO =  -139.0043 
+Iteration  7 ELBO =  -139.0042 
+Iteration  8 ELBO =  -139.0042 </code></pre>
+<pre class="r"><code>stan_fit &lt;- sampling(ph_exp_stan,
+                 data = list(X = X, y = y, v = v, 
+                             N = nrow(X), K = ncol(X), 
+                             mu0 = mu0, Sigma0 = Sigma0),
+                 refresh = 0)</code></pre>
+<pre class="r"><code>par(mfrow = c(2, 2), cex = 0.75)
+plot(1:length(vb_fit$lb), vb_fit$lb, xlab = &quot;Iteration&quot;, ylab = &quot;ELBO(q)&quot;, type = &#39;l&#39;)
+title(&quot;a)&quot;, adj = 0)
+plot(0, type = &#39;n&#39;, xaxt = &#39;n&#39;, yaxt = &#39;n&#39;, bty = &#39;n&#39;, pch = &#39;&#39;, ylab = &#39;&#39;, xlab = &#39;&#39;)
+hist(extract(stan_fit)$beta[, 1], prob = T, breaks = 50,
+     xlab = expression(beta[0]), main = &quot;&quot;)
+title(&quot;b)&quot;, adj = 0)
+curve(dnorm(x, vb_fit$mu[1], sqrt(vb_fit$Sigma[1, 1])), add = TRUE)
+hist(extract(stan_fit)$beta[, 2], prob = T, breaks = 50,
+     main = &quot;&quot;, xlab = expression(beta[1]))
+curve(dnorm(x, vb_fit$mu[2], sqrt(vb_fit$Sigma[2, 2])), add = TRUE)</code></pre>
+<div class="figure"><span id="fig:figs"></span>
+<img src="https://jatotterdell.github.io/post/2019-03-28-variational-inference-for-exponential-proportional-hazards-model_files/figure-html/figs-1.png" alt="a) Convergence of VB, and b) comparison of variation approximation and dynamic HMC." width="672" />
+<p class="caption">
+Figure 1: a) Convergence of VB, and b) comparison of variation approximation and dynamic HMC.
+</p>
+</div>
+</div>
+<div id="summary" class="section level2">
+<h2>Summary</h2>
+<p>A variational approximation for the exponential proportional hazards model under right-censoring was derived following the results in <span class="citation">Rhode and Wand (<a href="#ref-rhode2016" role="doc-biblioref">2016</a>)</span>. For more complicated survival models the derivations are unlikely to be as straightforward, but it would be interesting to investigate for other cases.</p>
+<hr />
+</div>
+<div id="references" class="section level2 unnumbered">
+<h2>References</h2>
+<div id="refs" class="references">
+<div id="ref-ormerod2010">
+<p>Ormerod, John T., and Matt P. Wand. 2010. “Explaining Variational Approximations.” <em>The American Statistician</em> 64 (2): 140–53.</p>
+</div>
+<div id="ref-rhode2016">
+<p>Rhode, David, and Matt P. Wand. 2016. “Semiparametric Mean Field Variational Bayes: General Principles and Numerical Issues.” <em>Journal of Machine Learning Research</em> 17: 1–47.</p>
+</div>
+</div>
+</div>
+
+  </div>
+
+  <div id=links>
+    
+    
+      <a class="basic-alignment left" href="https://jatotterdell.github.io/post/2019/04/11/semiparametric-baseline-hazard-using-monotone-splines/">Semiparametric baseline hazard using monotone splines &raquo;</a>
+    
+  </div>
+</section>
+
+<section id="comments">
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+
+(function() {
+      
+      
+      if (window.location.hostname == "localhost")
+                return;
+
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      var disqus_shortname = '';
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</section>
+
+
+  
+  
+<script src="https://jatotterdell.github.io/js/math-code.js"></script>
+<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+<script src="//cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="//cdn.bootcss.com/highlight.js/9.12.0/languages/r.min.js"></script>
+
+ <script>
+hljs.configure({languages: []});
+hljs.initHighlightingOnLoad();
+</script>
+
+<script type="text/x-mathjax-config"> 
+    MathJax.Hub.Config({ 
+        "HTML-CSS": { scale: 95, linebreaks: { automatic: true } }, 
+        SVG: { linebreaks: { automatic:true } }, 
+        // displayAlign: "left" 
+        });
+</script>
+
+</body>
+</html>
+

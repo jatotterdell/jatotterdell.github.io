@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Tags on James Totterdell</title>
+    <link>https://jatotterdell.github.io/tags/</link>
+    <description>Recent content in Tags on James Totterdell</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Mon, 02 Sep 2019 00:00:00 +0000</lastBuildDate><atom:link href="https://jatotterdell.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>priors</title>
+      <link>https://jatotterdell.github.io/tags/priors/</link>
+      <pubDate>Mon, 02 Sep 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/tags/priors/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>R</title>
+      <link>https://jatotterdell.github.io/tags/r/</link>
+      <pubDate>Mon, 02 Sep 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/tags/r/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Stan</title>
+      <link>https://jatotterdell.github.io/tags/stan/</link>
+      <pubDate>Mon, 02 Sep 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/tags/stan/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>multivariate normal</title>
+      <link>https://jatotterdell.github.io/tags/multivariate-normal/</link>
+      <pubDate>Wed, 08 May 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/tags/multivariate-normal/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>splines</title>
+      <link>https://jatotterdell.github.io/tags/splines/</link>
+      <pubDate>Thu, 11 Apr 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/tags/splines/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>

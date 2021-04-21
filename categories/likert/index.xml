@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>likert on James Totterdell</title>
+    <link>https://jatotterdell.github.io/categories/likert/</link>
+    <description>Recent content in likert on James Totterdell</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Thu, 25 Apr 2019 00:00:00 +0000</lastBuildDate><atom:link href="https://jatotterdell.github.io/categories/likert/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Ordinal Models Likert Scale Data</title>
+      <link>https://jatotterdell.github.io/post/2019/04/25/ordinal-models-likert-scale-data/</link>
+      <pubDate>Thu, 25 Apr 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://jatotterdell.github.io/post/2019/04/25/ordinal-models-likert-scale-data/</guid>
+      <description>Background I was recently tasked with providing support to a study where the primary outcome was an eight-item, seven-point Likert scale. The proposal was to use a t-test to undertake the analysis. Being unfamiliar with the analysis of Likert scale responses I decided to do a bit of research into what was standard practice.
+There appears to be disagreement about whether the appropriate analysis should be based on parametric or non-parametric methods (Sullivan and Artino Jr 2013).</description>
+    </item>
+    
+  </channel>
+</rss>
